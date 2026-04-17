@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en" class="bg-black text-slate-200">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>INDUSTRIAL OS // FLEET MANAGER</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                font-family: "JetBrains Mono", monospace;
+            }
+            .industrial-border {
+                border: 1px solid #2d3748;
+            }
+            .status-running {
+                color: #22c55e;
+                background: rgba(34, 197, 94, 0.1);
+            }
+            .status-failure {
+                color: #ef4444;
+                background: rgba(239, 68, 68, 0.1);
+                text-shadow: 0 0 8px #ef4444;
+            }
+            .status-idle {
+                color: #f59e0b;
+                background: rgba(245, 158, 11, 0.1);
+            }
+            /* Custom scrollbar for industrial look */
+            ::-webkit-scrollbar {
+                width: 4px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #000;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #2d3748;
+            }
+        </style>
+    </head>
+    <body class="h-screen flex flex-col overflow-hidden">
+        <header
+            class="h-14 border-b industrial-border bg-slate-900 flex items-center justify-between px-6 shrink-0"
+        >
+            <div class="flex items-center gap-4">
+                <span class="text-xl font-bold tracking-tighter text-blue-400"
+                    >FACTORY_OS
+                    <span class="text-slate-500 text-xs">v4.1.0</span></span
+                >
+                <nav class="flex gap-6 ml-10 text-xs uppercase tracking-widest">
+                    <button
+                        onclick="switchPage('live')"
+                        class="hover:text-blue-400 border-b-2 border-blue-400 pb-1"
+                    >
+                        Live View
+                    </button>
+                    <button
+                        onclick="switchPage('logs')"
+                        class="hover:text-blue-400 border-b-2 border-transparent pb-1"
+                    >
+                        Historical Logs
+                    </button>
+                </nav>
+            </div>
+            <div id="db-status" class="text-[10px] flex items-center gap-2">
+                <div
+                    class="w-2 h-2 rounded-full bg-green-500 animate-pulse"
+                ></div>
+                SYSTEM_LINK_STABLE
+            </div>
+        </header>
+
+        <main class="flex-grow flex overflow-hidden">
+            <section id="page-live" class="flex-grow flex p-6 gap-6">
+                <div class="flex-grow flex flex-col gap-6">
+                    <div class="grid grid-cols-3 gap-4 shrink-0">
+                        <div class="industrial-border p-4 bg-slate-900/50">
+                            <div class="text-[10px] text-slate-500 uppercase">
+                                Avg Temperature
+                            </div>
+                            <div class="text-2xl font-bold" id="stat-avg-temp">
+                                0.0°C
+                            </div>
+                        </div>
+                        <div class="industrial-border p-4 bg-slate-900/50">
+                            <div class="text-[10px] text-slate-500 uppercase">
+                                Total Active Units
+                            </div>
+                            <div
+                                class="text-2xl font-bold text-blue-400"
+                                id="stat-active"
+                            >
+                                0
+                            </div>
+                        </div>
+                        <div
+                            class="industrial-border p-4 bg-slate-900/50 border-red-900/50"
+                        >
+                            <div class="text-[10px] text-slate-500 uppercase">
+                                Alerts (24h)
+                            </div>
+                            <div class="text-2xl font-bold text-red-500">0</div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex-grow industrial-border bg-black p-4 relative"
+                    >
+                        <canvas id="liveChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="w-80 flex flex-col gap-4">
+                    <div class="industrial-border p-4 bg-slate-900/50">
+                        <h3
+                            class="text-xs font-bold mb-4 border-b border-slate-800 pb-2"
+                        >
+                            MACHINE_LIST
+                        </h3>
+                        <div
+                            id="machine-cards"
+                            class="flex flex-col gap-2"
+                        ></div>
+                    </div>
+                    <div
+                        class="industrial-border p-4 flex-grow bg-slate-900/50"
+                    >
+                        <h3
+                            class="text-xs font-bold mb-4 border-b border-slate-800 pb-2"
+                        >
+                            COMMAND_OUTPUT
+                        </h3>
+                        <div
+                            id="nlp-log"
+                            class="text-[10px] text-cyan-500 h-64 overflow-y-auto whitespace-pre-wrap"
+                        ></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="page-logs" class="hidden flex-grow flex flex-col p-6">
+                <div
+                    class="industrial-border bg-slate-900/50 p-4 mb-4 flex justify-between items-center"
+                >
+                    <div class="flex gap-4">
+                        <select
+                            id="log-machine-filter"
+                            class="bg-black border industrial-border text-xs p-2"
+                        >
+                            <option value="ALL">ALL_MACHINES</option>
+                            <option value="CNC_01">CNC_01</option>
+                            <option value="CNC_02">CNC_02</option>
+                        </select>
+                        <select
+                            id="log-status-filter"
+                            class="bg-black border industrial-border text-xs p-2"
+                        >
+                            <option value="ALL">ALL_STATUS</option>
+                            <option value="running">RUNNING</option>
+                            <option value="failure">FAILURE</option>
+                            <option value="idle">IDLE</option>
+                        </select>
+                    </div>
+                    <button
+                        onclick="fetchHistory()"
+                        class="bg-blue-600 px-4 py-2 text-xs font-bold hover:bg-blue-500"
+                    >
+                        EXECUTE_QUERY
+                    </button>
+                </div>
+
+                <div
+                    class="flex-grow industrial-border overflow-hidden flex flex-col"
+                >
+                    <div class="overflow-y-auto flex-grow bg-black">
+                        <table class="w-full text-left text-xs">
+                            <thead
+                                class="sticky top-0 bg-slate-800 uppercase text-[10px]"
+                            >
+                                <tr>
+                                    <th class="p-3 border-b industrial-border">
+                                        Timestamp
+                                    </th>
+                                    <th class="p-3 border-b industrial-border">
+                                        Machine ID
+                                    </th>
+                                    <th class="p-3 border-b industrial-border">
+                                        Status
+                                    </th>
+                                    <th class="p-3 border-b industrial-border">
+                                        Temp
+                                    </th>
+                                    <th class="p-3 border-b industrial-border">
+                                        RPM
+                                    </th>
+                                    <th class="p-3 border-b industrial-border">
+                                        Vib
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <script>
+            const SUPABASE_URL = "http://127.0.0.1:54321";
+            const SUPABASE_KEY =
+                "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH";
+            const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+            let liveChart;
+            const machineData = {};
+
+            // 1. NAVIGATION
+            function switchPage(page) {
+                document
+                    .getElementById("page-live")
+                    .classList.toggle("hidden", page !== "live");
+                document
+                    .getElementById("page-logs")
+                    .classList.toggle("hidden", page !== "logs");
+            }
+
+            // 2. CHART INITIALIZATION
+            function initChart() {
+                const ctx = document
+                    .getElementById("liveChart")
+                    .getContext("2d");
+                liveChart = new Chart(ctx, {
+                    type: "line",
+                    data: { labels: [], datasets: [] },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        scales: {
+                            y: {
+                                grid: { color: "#1e293b" },
+                                ticks: { color: "#475569" },
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: "#475569" },
+                            },
+                        },
+                        plugins: {
+                            legend: {
+                                position: "bottom",
+                                labels: {
+                                    color: "#94a3b8",
+                                    font: { size: 10 },
+                                },
+                            },
+                        },
+                    },
+                });
+            }
+
+            // 3. REALTIME LOGIC
+            function startRealtime() {
+                client
+                    .channel("any")
+                    .on(
+                        "postgres_changes",
+                        {
+                            event: "INSERT",
+                            schema: "public",
+                            table: "machine_telemetry",
+                        },
+                        (payload) => {
+                            handleNewData(payload.new);
+                        },
+                    )
+                    .subscribe();
+            }
+
+            function handleNewData(row) {
+                // Update Mini Machine Cards
+                updateMachineCard(row);
+
+                // Log to NLP console
+                const nlp = document.getElementById("nlp-log");
+                nlp.innerHTML =
+                    `[${new Date().toLocaleTimeString()}] RECEIVED_DATA_${row.machine_id}: T:${row.temperature_c} R:${row.rpm}\n` +
+                    nlp.innerHTML;
+
+                // Update Global Stats
+                document.getElementById("stat-avg-temp").innerText =
+                    row.temperature_c.toFixed(1) + "°C";
+            }
+
+            function updateMachineCard(row) {
+                let card = document.getElementById(`card-${row.machine_id}`);
+                if (!card) {
+                    card = document.createElement("div");
+                    card.id = `card-${row.machine_id}`;
+                    card.className =
+                        "p-3 industrial-border bg-black flex justify-between items-center text-[11px]";
+                    document.getElementById("machine-cards").appendChild(card);
+                }
+                const statusClass = `status-${row.status.toLowerCase()}`;
+                card.innerHTML = `
+                <div>
+                    <span class="text-slate-500 font-bold">${row.machine_id}</span>
+                    <div class="text-[9px] mt-1">RPM: ${row.rpm}</div>
+                </div>
+                <div class="px-2 py-1 rounded ${statusClass} font-bold">${row.status.toUpperCase()}</div>
+            `;
+            }
+
+            // 4. HISTORY LOGS QUERY
+            async function fetchHistory() {
+                const mFilter =
+                    document.getElementById("log-machine-filter").value;
+                const sFilter =
+                    document.getElementById("log-status-filter").value;
+
+                let query = client
+                    .from("machine_telemetry")
+                    .select("*")
+                    .order("recorded_at", { ascending: false })
+                    .limit(100);
+
+                if (mFilter !== "ALL") query = query.eq("machine_id", mFilter);
+                if (sFilter !== "ALL") query = query.eq("status", sFilter);
+
+                const { data, error } = await query;
+                if (data) renderHistory(data);
+            }
+
+            function renderHistory(data) {
+                const body = document.getElementById("history-body");
+                body.innerHTML = data
+                    .map(
+                        (row) => `
+                <tr>
+                    <td class="p-3 border-b border-slate-900 text-slate-500">${new Date(row.recorded_at).toLocaleString()}</td>
+                    <td class="p-3 border-b border-slate-900 font-bold">${row.machine_id}</td>
+                    <td class="p-3 border-b border-slate-900">
+                        <span class="px-2 py-0.5 rounded status-${row.status.toLowerCase()}">${row.status}</span>
+                    </td>
+                    <td class="p-3 border-b border-slate-900">${row.temperature_c}°C</td>
+                    <td class="p-3 border-b border-slate-900">${row.rpm}</td>
+                    <td class="p-3 border-b border-slate-900">${row.vibration_mm_s}</td>
+                </tr>
+            `,
+                    )
+                    .join("");
+            }
+
+            // Init
+            initChart();
+            startRealtime();
+        </script>
+    </body>
+</html>
