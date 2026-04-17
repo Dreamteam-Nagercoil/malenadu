@@ -1,4 +1,3 @@
-import requests
 import pandas as pd
 import joblib
 import json
@@ -7,101 +6,97 @@ import threading
 import uvicorn
 import time
 import asyncio
+import os
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from typing import Dict
+from collections import defaultdict, deque
 
 # -----------------------------
 # CONFIG
 # -----------------------------
 BASE_URL_RLS = "http://localhost:3000"
-BASE_URL_OUT = "http://localhost:5000"
-
 MACHINE_IDS = ["CNC_01", "CNC_02", "PUMP_03", "CONVEYOR_04"]
 
+# 🔥 Toggle learning
+LEARNING_ENABLED = False
+
+# 🔥 Threshold file
+THRESHOLD_FILE = "thresholds.json"
+
 # -----------------------------
-# GLOBAL STOP FLAG
+# GLOBALS
 # -----------------------------
 stop_event = threading.Event()
-
-# -----------------------------
-# FASTAPI SERVER
-# -----------------------------
 app = FastAPI()
-
 latest_data: Dict[str, dict] = {}
 
-@app.post("/pm/{machine_id}")
-async def receive_data(machine_id: str, payload: dict):
-    latest_data[machine_id] = payload
-    print(f"📥 {machine_id} | Risk={payload['risk']:.2f}")
-    return {"status": "ok"}
+# -----------------------------
+# METRICS
+# -----------------------------
+metrics = {
+    "total": 0,
+    "correct": 0,
+    "per_machine": {}
+}
 
+# -----------------------------
+# DEFAULT THRESHOLDS
+# -----------------------------
+default_thresholds = {
+    "CNC_01":      {"warning": 0.4, "fault": 0.7},
+    "CNC_02":      {"warning": 0.5, "fault": 0.60},
+    "PUMP_03":     {"warning": 0.6, "fault": 0.90},
+    "CONVEYOR_04": {"warning": 0.8, "fault": 0.9},
+}
+
+# -----------------------------
+# LOAD / SAVE THRESHOLDS
+# -----------------------------
+def load_thresholds():
+    if os.path.exists(THRESHOLD_FILE):
+        with open(THRESHOLD_FILE, "r") as f:
+            print("📂 Loaded saved thresholds")
+            return json.load(f)
+    print("⚠️ Using default thresholds")
+    return default_thresholds.copy()
+
+def save_thresholds(thresholds):
+    with open(THRESHOLD_FILE, "w") as f:
+        json.dump(thresholds, f, indent=4)
+
+# Initialize thresholds
+thresholds = load_thresholds()
+
+# -----------------------------
+# HISTORY (SMOOTHING)
+# -----------------------------
+history = defaultdict(lambda: deque(maxlen=10))
+
+# -----------------------------
+# API
+# -----------------------------
 @app.get("/pm")
 async def get_all():
     return latest_data
 
-@app.get("/pm/{machine_id}")
-async def get_machine(machine_id: str):
-    return latest_data.get(machine_id, {"error": "No data yet"})
-
-# -----------------------------
-# 🔥 ALL MACHINES STREAM
-# -----------------------------
-async def event_generator():
-    while not stop_event.is_set():
-        try:
-            yield f"data: {json.dumps(latest_data)}\n\n"
-            await asyncio.sleep(1)
-        except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-            await asyncio.sleep(1)
+@app.get("/metrics")
+async def get_metrics():
+    return metrics
 
 @app.get("/stream")
-async def stream():
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Access-Control-Allow-Origin": "*"
-        }
-    )
-
-# -----------------------------
-# 🔥 PER-MACHINE STREAM
-# -----------------------------
-async def machine_stream_generator(machine_id):
-    while not stop_event.is_set():
-        try:
-            data = latest_data.get(machine_id, {})
-            yield f"data: {json.dumps(data)}\n\n"
+async def stream_all():
+    async def gen():
+        while not stop_event.is_set():
+            yield f"data: {json.dumps(latest_data)}\n\n"
             await asyncio.sleep(1)
-        except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-            await asyncio.sleep(1)
-
-@app.get("/stream/{machine_id}")
-async def stream_machine(machine_id: str):
-    return StreamingResponse(
-        machine_stream_generator(machine_id),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Access-Control-Allow-Origin": "*"
-        }
-    )
-
-def run_server():
-    uvicorn.run(app, host="0.0.0.0", port=5000, log_level="warning")
+    return StreamingResponse(gen(), media_type="text/event-stream")
 
 # -----------------------------
 # LOAD MODELS
 # -----------------------------
-models = {}
-for m in MACHINE_IDS:
-    models[m] = joblib.load(f"model_{m}.pkl")
+models = {m: joblib.load(f"model_{m}.pkl") for m in MACHINE_IDS}
 
 # -----------------------------
 # LOAD BASELINES
@@ -110,33 +105,32 @@ with open("baselines.json") as f:
     baselines = json.load(f)
 
 # -----------------------------
-# SEND METRICS
-# -----------------------------
-def send_metrics(machine_id, payload):
-    try:
-        url = f"{BASE_URL_OUT}/pm/{machine_id}"
-        requests.post(url, json=payload, timeout=3)
-    except Exception as e:
-        print(f"[{machine_id}] Send error:", e)
-
-# -----------------------------
 # RISK FUNCTION
 # -----------------------------
-def compute_risk(z_temp, z_vib, z_curr, error, threshold):
-    z_temp_score = min(1.0, abs(z_temp) / 3)
-    z_vib_score  = min(1.0, abs(z_vib) / 3)
-    z_curr_score = min(1.0, abs(z_curr) / 3)
-    ml_score     = min(1.0, error / threshold)
-
-    return (
-        0.3 * z_temp_score +
-        0.3 * z_vib_score +
-        0.2 * z_curr_score +
-        0.2 * ml_score
+def compute_risk(z_temp, z_vib, z_curr, error):
+    risk = (
+        0.3 * min(1, abs(z_temp)/3) +
+        0.3 * min(1, abs(z_vib)/3) +
+        0.3 * min(1, abs(z_curr)/3) +
+        0.1 * min(1, error/2.0)
     )
+    return min(risk, 0.95)
 
 # -----------------------------
-# MONITOR FUNCTION
+# PREDICTION
+# -----------------------------
+def predict_label(machine_id, risk):
+    t = thresholds[machine_id]
+
+    if risk > (t["fault"] + 0.05):
+        return "fault"
+    elif risk > t["warning"]:
+        return "warning"
+    else:
+        return "running"
+
+# -----------------------------
+# MONITOR
 # -----------------------------
 def monitor(machine_id):
     print(f"🔌 Monitoring {machine_id}")
@@ -145,108 +139,135 @@ def monitor(machine_id):
     mean  = baselines[machine_id]["mean"]
     std   = baselines[machine_id]["std"]
 
-    url = f"{BASE_URL_RLS}/stream/{machine_id}"
+    client = sseclient.SSEClient(f"{BASE_URL_RLS}/stream/{machine_id}")
 
-    try:
-        client = sseclient.SSEClient(url)
+    for event in client:
+        if stop_event.is_set():
+            break
 
-        for event in client:
-            if stop_event.is_set():
-                print(f"🛑 Stopping {machine_id}")
-                break
+        try:
+            if not event.data:
+                continue
 
-            try:
-                if not event.data:
-                    continue
+            data = json.loads(event.data)
 
-                data = json.loads(event.data)
+            rpm  = data["rpm"]
+            temp = data["temperature_C"]
+            vib  = data["vibration_mm_s"]
+            curr = data["current_A"]
+            status = data.get("status", "unknown")
 
-                rpm  = data["rpm"]
-                temp = data["temperature_C"]
-                vib  = data["vibration_mm_s"]
-                curr = data["current_A"]
+            # Z-score
+            z_temp = (temp - mean["temperature_C"]) / std["temperature_C"]
+            z_vib  = (vib  - mean["vibration_mm_s"]) / std["vibration_mm_s"]
+            z_curr = (curr - mean["current_A"])     / std["current_A"]
 
-                # Z-score
-                z_temp = (temp - mean["temperature_C"]) / std["temperature_C"]
-                z_vib  = (vib  - mean["vibration_mm_s"]) / std["vibration_mm_s"]
-                z_curr = (curr - mean["current_A"])     / std["current_A"]
+            # ML
+            X = pd.DataFrame([{
+                "rpm": rpm,
+                "temperature_C": temp,
+                "vibration_mm_s": vib
+            }])
 
-                # ML prediction
-                X = pd.DataFrame([{
-                    "rpm": rpm,
-                    "temperature_C": temp,
-                    "vibration_mm_s": vib
-                }])
+            predicted = model.predict(X)[0]
+            error = abs(curr - predicted)
 
-                predicted = model.predict(X)[0]
-                error = abs(curr - predicted)
+            # Risk
+            risk = compute_risk(z_temp, z_vib, z_curr, error)
 
-                # Risk
-                risk = compute_risk(z_temp, z_vib, z_curr, error, threshold=2.0)
+            # Machine tuning
+            if machine_id == "CONVEYOR_04":
+                risk *= 0.85
+            elif machine_id == "CNC_02":
+                risk *= 1.1
 
-                print(f"[{machine_id}] Risk={risk:.2f} | Err={error:.2f}")
+            # Smoothing
+            history[machine_id].append(risk)
+            avg_risk = sum(history[machine_id]) / len(history[machine_id])
 
-                payload = {
-                    "machine_id": machine_id,
-                    "timestamp": data["timestamp"],
-                    "z_scores": {
-                        "temperature": z_temp,
-                        "vibration": z_vib,
-                        "current": z_curr
-                    },
-                    "ml": {
-                        "predicted_current": predicted,
-                        "actual_current": curr,
-                        "error": error
-                    },
-                    "risk": risk,
-                    "raw": data
-                }
+            # Prediction
+            prediction = predict_label(machine_id, avg_risk)
 
-                # async send
-                threading.Thread(
-                    target=send_metrics,
-                    args=(machine_id, payload),
-                    daemon=True
-                ).start()
+            # 🔥 Persistence-based fault detection (CNC_02)
+            if machine_id == "CNC_02":
+                recent = list(history[machine_id])
+                if len(recent) >= 5 and all(r > 0.85 for r in recent[-5:]):
+                    prediction = "fault"
 
-            except Exception as e:
-                print(f"[{machine_id}] Processing error:", e)
+            # Evaluation
+            is_correct = (prediction == status)
 
-    except Exception as e:
-        print(f"[{machine_id}] Stream error:", e)
+            metrics["total"] += 1
+            if is_correct:
+                metrics["correct"] += 1
+
+            acc = metrics["correct"] / metrics["total"]
+
+            # -----------------------------
+            # LEARNING (OPTIONAL)
+            # -----------------------------
+            if LEARNING_ENABLED:
+                t = thresholds[machine_id]
+
+                if not is_correct:
+                    if status == "fault":
+                        t["fault"] -= 0.02
+                    elif status == "running" and prediction == "fault":
+                        t["fault"] += 0.02
+                    elif status == "warning" and avg_risk < t["warning"]:
+                        t["warning"] -= 0.02
+                    elif status == "running" and prediction == "warning":
+                        t["warning"] += 0.02
+
+                # Clamp
+                t["fault"] = max(0.6, min(0.95, t["fault"]))
+                t["warning"] = max(0.3, min(0.9, t["warning"]))
+
+                # Save periodically
+                if metrics["total"] % 20 == 0:
+                    save_thresholds(thresholds)
+
+            # Print
+            print(
+                f"[{machine_id}] Risk={avg_risk:.2f} | "
+                f"Pred={prediction} | Actual={status} | "
+                f"{'✅' if is_correct else '❌'} | Acc={acc:.2f}"
+            )
+
+            # Store
+            latest_data[machine_id] = {
+                "machine_id": machine_id,
+                "risk": avg_risk,
+                "prediction": prediction,
+                "actual": status,
+                "accuracy": acc,
+                "learning": LEARNING_ENABLED
+            }
+
+        except Exception as e:
+            print(f"[{machine_id}] Error:", e)
 
 # -----------------------------
 # MAIN
 # -----------------------------
 if __name__ == "__main__":
-    threads = []
-
     try:
-        # Start FastAPI server
-        server_thread = threading.Thread(target=run_server, daemon=True)
-        server_thread.start()
+        threading.Thread(
+            target=lambda: uvicorn.run(app, host="0.0.0.0", port=5000),
+            daemon=True
+        ).start()
 
-        print("🚀 FastAPI running on http://localhost:5000")
-        print("📡 All machines stream → http://localhost:5000/stream")
-        print("📡 Per machine stream → http://localhost:5000/stream/{machine_id}")
+        print("🚀 Server → http://localhost:5000")
+        print(f"🧠 Learning Mode: {'ON' if LEARNING_ENABLED else 'OFF'}")
 
-        # Start monitoring
         for m in MACHINE_IDS:
-            t = threading.Thread(target=monitor, args=(m,), daemon=True)
-            t.start()
-            threads.append(t)
+            threading.Thread(target=monitor, args=(m,), daemon=True).start()
 
-        # Keep alive
-        while not stop_event.is_set():
-            time.sleep(0.5)
+        while True:
+            time.sleep(1)
 
     except KeyboardInterrupt:
         print("\n🛑 Shutting down...")
-
         stop_event.set()
-
-        for t in threads:
-            t.join(timeout=2)
-
-        print("✅ Shutdown complete")
+        save_thresholds(thresholds)
+        print("💾 Thresholds saved")
