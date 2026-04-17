@@ -1,0 +1,708 @@
+
+<script>
+
+
+</script>
+
+
+
+<!DOCTYPE html>
+<html data-theme="dark">
+<head>
+<meta charset="utf-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ====== THEME SYSTEM ====== */
+[data-theme="dark"]{
+  --bg:#000000;--bg2:#0a0c12;--bg3:#12151e;--bg4:#1a1e2a;
+  --border:#1e2233;--border2:#2a3048;
+  --txt:#e2e5f0;--txt2:#8b90a8;--txt3:#555c78;
+  --green:#22c97a;--amber:#f5a623;--red:#f05050;--blue:#4a9eff;--purple:#a78bfa;--cyan:#22d3ee;
+  --green-bg:rgba(34,201,122,.1);--amber-bg:rgba(245,166,35,.1);--red-bg:rgba(240,80,80,.12);
+  --card-shadow:0 2px 12px rgba(0,0,0,.4);
+  --glow-red:0 0 20px rgba(240,80,80,.3),0 0 40px rgba(240,80,80,.1);
+  --glow-blue:0 0 12px rgba(74,158,255,.15);
+  --glow-green:0 0 12px rgba(34,201,122,.15);
+  --overlay-bg:rgba(0,0,0,.85);
+  --chart-grid:rgba(42,46,61,.5);
+  --scrollbar:#2a3048;
+}
+[data-theme="light"]{
+  --bg:#f0f2f5;--bg2:#ffffff;--bg3:#f7f8fa;--bg4:#ebedf2;
+  --border:#d4d8e1;--border2:#c0c5d3;
+  --txt:#1a1d27;--txt2:#5a5f73;--txt3:#8891a8;
+  --green:#14915a;--amber:#c48200;--red:#d03030;--blue:#2b7de9;--purple:#7c5cbf;--cyan:#0ea5c9;
+  --green-bg:rgba(20,145,90,.08);--amber-bg:rgba(196,130,0,.08);--red-bg:rgba(208,48,48,.08);
+  --card-shadow:0 2px 8px rgba(0,0,0,.06);
+  --glow-red:0 0 16px rgba(208,48,48,.2),0 0 32px rgba(208,48,48,.06);
+  --glow-blue:0 0 10px rgba(43,125,233,.1);
+  --glow-green:0 0 10px rgba(20,145,90,.1);
+  --overlay-bg:rgba(240,242,245,.95);
+  --chart-grid:rgba(0,0,0,.06);
+  --scrollbar:#c0c5d3;
+}
+
+body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.5;overflow-x:hidden;transition:background .4s,color .3s}
+
+/* ====== LOGIN OVERLAY ====== */
+.login-overlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:background .4s}
+.login-overlay.hidden{display:none}
+.login-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:44px 40px;width:400px;text-align:center;box-shadow:var(--card-shadow);position:relative;overflow:hidden}
+.login-box::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:conic-gradient(from 0deg,transparent,rgba(74,158,255,.03),transparent,rgba(167,139,250,.03),transparent);animation:loginGlow 8s linear infinite}
+@keyframes loginGlow{to{transform:rotate(360deg)}}
+.login-box>*{position:relative;z-index:1}
+.login-box h1{font-size:20px;color:var(--cyan);letter-spacing:.06em;margin-bottom:4px}
+.login-box .subtitle{color:var(--txt3);font-size:11px;margin-bottom:24px}
+.login-box .kc-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:6px;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);color:var(--purple);font-size:10px;margin-bottom:20px}
+.login-field{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:11px 16px;color:var(--txt);font-family:inherit;font-size:12px;outline:none;margin-bottom:12px;display:block;transition:border-color .2s,box-shadow .2s}
+.login-field:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(74,158,255,.1)}
+.login-field::placeholder{color:var(--txt3)}
+.login-btn{width:100%;padding:12px;background:linear-gradient(135deg,rgba(74,158,255,.2),rgba(167,139,250,.15));border:1px solid rgba(74,158,255,.4);border-radius:8px;color:var(--blue);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.04em;transition:all .25s;position:relative;overflow:hidden}
+.login-btn:hover{background:linear-gradient(135deg,rgba(74,158,255,.3),rgba(167,139,250,.25));transform:translateY(-1px);box-shadow:0 4px 16px rgba(74,158,255,.2)}
+.login-btn:active{transform:translateY(0)}
+.login-error{color:var(--red);font-size:11px;margin-top:8px;min-height:16px}
+.login-info{color:var(--txt3);font-size:10px;margin-top:18px;line-height:1.7}
+
+/* ====== HEADER ====== */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);transition:background .3s}
+.hdr-logo{font-size:13px;font-weight:700;letter-spacing:.04em;color:var(--cyan)}
+.hdr-logo span{color:var(--txt2);font-weight:400}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.hdr-user{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;background:rgba(34,201,122,.08);border:1px solid rgba(34,201,122,.25);font-size:10px;color:var(--green)}
+.hdr-user .avatar{width:20px;height:20px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--bg);font-weight:700}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 1.2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr-time{color:var(--txt2);font-size:11px}
+.hdr-btn{padding:4px 10px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--txt2);font-family:inherit;font-size:11px;cursor:pointer;transition:all .2s}
+.hdr-btn:hover{border-color:var(--blue);color:var(--blue)}
+.hdr-btn.active{background:rgba(74,158,255,.12);border-color:var(--blue);color:var(--blue)}
+.hdr-btn.logout{border-color:rgba(240,80,80,.3);color:var(--txt3)}
+.hdr-btn.logout:hover{border-color:var(--red);color:var(--red);background:rgba(240,80,80,.06)}
+
+/* THEME TOGGLE */
+.theme-toggle{width:38px;height:20px;border-radius:10px;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;position:relative;transition:all .3s;display:flex;align-items:center;padding:0 2px}
+.theme-toggle::after{content:'';width:14px;height:14px;border-radius:50%;background:var(--blue);transition:transform .3s,background .3s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+[data-theme="light"] .theme-toggle::after{transform:translateX(18px);background:var(--amber)}
+.theme-toggle-label{font-size:9px;color:var(--txt3);letter-spacing:.03em}
+
+/* ====== MASTER STATUS BAR ====== */
+.master-bar{display:flex;align-items:center;gap:0;padding:0;border-bottom:1px solid var(--border);transition:all .4s;background:var(--bg2)}
+.master-bar.fleet-critical{border-color:var(--red);box-shadow:var(--glow-red);animation:fleetAlarm 1.5s ease-in-out infinite}
+@keyframes fleetAlarm{
+  0%,100%{box-shadow:0 0 20px rgba(240,80,80,.2),inset 0 0 20px rgba(240,80,80,.05);border-color:rgba(240,80,80,.6)}
+  50%{box-shadow:0 0 40px rgba(240,80,80,.4),inset 0 0 30px rgba(240,80,80,.1);border-color:rgba(240,80,80,1)}
+}
+.master-seg{flex:1;padding:8px 14px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:2px;transition:background .3s}
+.master-seg:last-child{border-right:none}
+.ms-label{font-size:10px;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase}
+.ms-val{font-size:14px;font-weight:700;letter-spacing:.02em}
+.ms-val.ok{color:var(--green)}.ms-val.warn{color:var(--amber)}.ms-val.crit{color:var(--red)}.ms-val.info{color:var(--blue)}
+.ms-sub{font-size:10px;color:var(--txt3)}
+
+/* ====== LAYOUT ====== */
+.main{display:grid;grid-template-columns:1fr 290px;height:calc(100vh - 82px - 28px);overflow:hidden}
+.left{overflow-y:auto;padding:12px}
+.right{border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;background:var(--bg2)}
+
+/* ====== MACHINE CARDS ====== */
+.machines-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.mc{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .3s;box-shadow:var(--card-shadow)}
+.mc:hover{border-color:var(--border2);transform:translateY(-1px)}
+.mc.sel{border-color:var(--blue);box-shadow:var(--glow-blue)}
+.mc.warn-border{border-color:var(--amber)}
+.mc.crit-border{border-color:var(--red);box-shadow:var(--glow-red);animation:critPulse 2s ease-in-out infinite}
+@keyframes critPulse{
+  0%,100%{box-shadow:0 0 15px rgba(240,80,80,.2),0 0 30px rgba(240,80,80,.05);border-color:rgba(240,80,80,.7)}
+  50%{box-shadow:0 0 25px rgba(240,80,80,.35),0 0 50px rgba(240,80,80,.12);border-color:rgba(240,80,80,1)}
+}
+.mc-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border);gap:4px;flex-wrap:wrap}
+.mc-id{font-size:12px;font-weight:700;letter-spacing:.05em}
+.mc-status{display:flex;align-items:center;gap:5px;font-size:10px}
+.status-dot{width:6px;height:6px;border-radius:50%}
+.status-dot.ok{background:var(--green)}.status-dot.warn{background:var(--amber);animation:blink 1s infinite}.status-dot.fault{background:var(--red);animation:faultBlink .4s infinite}
+@keyframes faultBlink{0%,100%{opacity:1;box-shadow:0 0 6px rgba(240,80,80,.6)}50%{opacity:.2;box-shadow:none}}
+.risk-badge{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.03em}
+.risk-low{background:var(--green-bg);color:var(--green)}
+.risk-med{background:var(--amber-bg);color:var(--amber)}
+.risk-high{background:var(--red-bg);color:var(--red);animation:riskFlash 1.5s ease-in-out infinite}
+@keyframes riskFlash{0%,100%{background:rgba(240,80,80,.12)}50%{background:rgba(240,80,80,.22)}}
+
+/* COMPOUND BADGE */
+.compound-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.35);font-size:9px;color:var(--purple);font-weight:700;animation:compoundPulse 2s ease-in-out infinite}
+@keyframes compoundPulse{0%,100%{opacity:1;box-shadow:0 0 8px rgba(167,139,250,.2)}50%{opacity:.6;box-shadow:none}}
+
+/* SENSOR GAUGES */
+.mc-sensors{padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.sensor-row{display:flex;align-items:center;gap:6px}
+.sn-label{width:72px;color:var(--txt2);font-size:10px;white-space:nowrap}
+.sn-bar-wrap{flex:1;height:5px;background:var(--bg4);border-radius:3px;position:relative;overflow:hidden}
+.sn-bar{height:100%;border-radius:3px;transition:width .5s ease}
+.sn-bar.ok{background:linear-gradient(90deg,var(--green),rgba(34,201,122,.7))}
+.sn-bar.warn{background:linear-gradient(90deg,var(--amber),rgba(245,166,35,.7))}
+.sn-bar.crit{background:linear-gradient(90deg,var(--red),rgba(240,80,80,.7));animation:critBarPulse 1s ease-in-out infinite}
+@keyframes critBarPulse{0%,100%{opacity:1}50%{opacity:.7}}
+.sn-bar.drift{background:linear-gradient(90deg,var(--amber),rgba(245,166,35,.3))}
+.sn-val{width:52px;text-align:right;font-size:10px;font-weight:600}
+.sn-val.ok{color:var(--green)}.sn-val.warn{color:var(--amber)}.sn-val.crit{color:var(--red);animation:valBlink 1s infinite}
+@keyframes valBlink{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* RISK RING */
+.mc-footer{display:flex;align-items:center;gap:8px;padding:6px 10px;border-top:1px solid var(--border);background:var(--bg3)}
+.risk-ring{position:relative;width:34px;height:34px}
+.risk-ring svg{transform:rotate(-90deg)}
+.risk-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.mc-footer-info{flex:1;min-width:0}
+.mfi-top{font-size:10px;color:var(--txt2)}
+.mfi-bot{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ====== DETAIL SECTION ====== */
+.detail-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;box-shadow:var(--card-shadow);transition:background .3s,border-color .3s}
+.ds-title{font-size:11px;color:var(--txt2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ds-title span{flex:1}
+.ds-title .tag{font-size:9px;padding:2px 8px;border-radius:4px;background:var(--bg4);color:var(--txt3);letter-spacing:.03em;text-transform:none;transition:all .3s}
+.ds-title .tag.crit-tag{background:rgba(240,80,80,.15);color:var(--red);border:1px solid rgba(240,80,80,.3)}
+
+/* SUPPRESSED INDICATOR */
+.suppressed-indicator{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;background:rgba(85,92,120,.1);border:1px solid rgba(85,92,120,.2);font-size:9px;color:var(--txt3);margin-left:auto;transition:all .3s}
+.suppressed-indicator.active{background:rgba(245,166,35,.08);border-color:rgba(245,166,35,.3);color:var(--amber);box-shadow:0 0 8px rgba(245,166,35,.1)}
+
+/* SENSOR TABS */
+.sensor-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:8px;overflow-x:auto}
+.stab{padding:5px 10px;font-size:10px;color:var(--txt3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
+.stab:hover{color:var(--txt2)}
+.stab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.stab .badge{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:4px;vertical-align:middle;transition:all .3s}
+.chart-wrap{position:relative;height:130px;width:100%}
+canvas{display:block;width:100%!important}
+.chart-legend{display:flex;gap:12px;margin-top:6px;font-size:10px;color:var(--txt3);flex-wrap:wrap}
+.cl-item{display:flex;align-items:center;gap:4px}
+.cl-dot{width:8px;height:2px;border-radius:1px}
+
+/* ====== NLP PANEL ====== */
+.nlp-section{background:var(--bg2);border:1px solid rgba(74,158,255,.2);border-radius:10px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--glow-blue);transition:all .3s}
+.nlp-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.nlp-header-icon{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,rgba(74,158,255,.2),rgba(167,139,250,.15));display:flex;align-items:center;justify-content:center;font-size:16px}
+.nlp-header-text{font-size:12px;font-weight:700;color:var(--blue);letter-spacing:.04em}
+.nlp-header-sub{font-size:10px;color:var(--txt3);font-weight:400}
+.quick-asks{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.quick-ask{padding:5px 10px;border-radius:5px;border:1px solid rgba(74,158,255,.2);background:rgba(74,158,255,.04);color:var(--blue);font-family:inherit;font-size:10px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.quick-ask:hover{background:rgba(74,158,255,.12);border-color:rgba(74,158,255,.4);transform:translateY(-1px)}
+.nlp-input-row{display:flex;gap:6px}
+.nlp-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--txt);font-family:inherit;font-size:11px;outline:none;transition:all .2s}
+.nlp-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(74,158,255,.08)}
+.nlp-input::placeholder{color:var(--txt3)}
+.nlp-send{padding:9px 16px;background:linear-gradient(135deg,rgba(74,158,255,.15),rgba(167,139,250,.1));border:1px solid rgba(74,158,255,.4);border-radius:6px;color:var(--blue);font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s}
+.nlp-send:hover{background:linear-gradient(135deg,rgba(74,158,255,.25),rgba(167,139,250,.2));transform:translateY(-1px)}
+.nlp-resp{margin-top:10px;padding:12px 14px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--blue);font-size:11px;color:var(--txt2);line-height:1.7;min-height:48px;transition:all .3s}
+
+/* SENSOR TOGGLE */
+.sensor-toggles{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.stoggle{padding:3px 8px;border-radius:4px;border:1px solid var(--border2);font-size:10px;cursor:pointer;font-family:inherit;color:var(--txt2);background:transparent;transition:all .2s}
+.stoggle.on{border-color:var(--blue);color:var(--blue);background:rgba(74,158,255,.08)}
+.stoggle:hover{border-color:var(--txt2)}
+
+/* BASELINE TABLE */
+.bl-table{width:100%;border-collapse:collapse;font-size:10px}
+.bl-table th{color:var(--txt3);text-align:left;padding:4px 5px;font-weight:500;border-bottom:1px solid var(--border)}
+.bl-table td{padding:4px 5px;border-bottom:1px solid rgba(42,46,61,.3);color:var(--txt2);transition:color .3s}
+.bl-table td.hi{color:var(--txt);font-weight:600}
+.bl-table tr:hover{background:rgba(74,158,255,.02)}
+.anomaly-type{padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700}
+.anomaly-type.spike{background:rgba(240,80,80,.12);color:var(--red)}
+.anomaly-type.drift{background:rgba(245,166,35,.1);color:var(--amber)}
+.anomaly-type.compound{background:rgba(167,139,250,.12);color:var(--purple)}
+.anomaly-type.nominal{background:rgba(34,201,122,.08);color:var(--green)}
+
+/* ====== STATUS BAR ====== */
+.status-bar{display:flex;align-items:center;gap:14px;padding:5px 16px;border-top:1px solid var(--border);background:var(--bg2);font-size:10px;color:var(--txt3);transition:background .3s}
+.sb-item{display:flex;align-items:center;gap:5px}
+.sb-dot{width:5px;height:5px;border-radius:50%;transition:background .3s}
+.sb-dot.ok{background:var(--green)}.sb-dot.warn{background:var(--amber)}.sb-dot.off{background:var(--txt3)}
+.sb-dot.reconnecting{background:var(--amber);animation:blink .4s infinite}
+
+/* ====== RIGHT PANEL ====== */
+.rpanel-section{padding:10px 12px;border-bottom:1px solid var(--border)}
+.rp-title{font-size:10px;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+
+/* ALERTS */
+.alert-item{padding:8px 10px;border-radius:6px;margin-bottom:6px;border-left:3px solid;font-size:11px;transition:all .3s}
+.alert-item.a-warn{background:var(--amber-bg);border-color:var(--amber)}
+.alert-item.a-crit{background:var(--red-bg);border-color:var(--red);animation:alertFlash 2s ease-in-out infinite}
+@keyframes alertFlash{0%,100%{background:rgba(240,80,80,.08)}50%{background:rgba(240,80,80,.16)}}
+.alert-item.a-info{background:rgba(74,158,255,.06);border-color:var(--blue)}
+.al-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.al-machine{font-weight:700;font-size:11px}
+.al-machine.warn{color:var(--amber)}.al-machine.crit{color:var(--red)}.al-machine.info{color:var(--blue)}
+.al-time{font-size:9px;color:var(--txt3)}
+.al-reason{color:var(--txt2);font-size:10px;line-height:1.5}
+.al-risk{font-size:10px;font-weight:600;margin-top:3px}
+
+/* SCHEDULE */
+.sched-item{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.sched-item:last-child{border-bottom:none}
+.si-time{min-width:52px;font-size:10px;color:var(--blue)}
+.si-info{flex:1;min-width:0}
+.si-machine{font-size:11px;font-weight:600}
+.si-desc{font-size:10px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.si-prio{font-size:9px;padding:1px 6px;border-radius:3px}
+.si-prio.p1{background:var(--red-bg);color:var(--red)}
+.si-prio.p2{background:var(--amber-bg);color:var(--amber)}
+.si-prio.p3{background:rgba(34,211,238,.08);color:var(--cyan)}
+.cbm-tooltip{margin-top:6px;padding:6px 8px;background:var(--bg3);border-radius:5px;border:1px solid var(--border);font-size:9px;color:var(--txt3);line-height:1.7}
+.cbm-tooltip strong{color:var(--txt2)}
+
+/* API LOG */
+.api-log{padding:0;max-height:120px;overflow-y:auto}
+.api-entry{padding:4px 12px;border-bottom:1px solid var(--border);font-size:10px;display:flex;gap:6px}
+.api-method{color:var(--green);font-weight:700;min-width:34px}
+.api-method.post{color:var(--amber)}
+.api-path{color:var(--txt2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.api-status{color:var(--txt3);font-size:9px;min-width:28px;text-align:right}
+.api-status.err{color:var(--red)}
+
+/* DB BADGE */
+.db-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.15);font-size:9px;color:var(--cyan)}
+
+/* CRITICAL OVERLAY STRIPE */
+.crit-stripe{display:none;height:2px;background:linear-gradient(90deg,transparent,var(--red),transparent);animation:stripeMove 2s linear infinite}
+.crit-stripe.show{display:block}
+@keyframes stripeMove{0%{background-position:0 0}100%{background-position:200% 0}}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:2px}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <h1>🏭 PREDICTIVE MAINTENANCE</h1>
+    <div class="subtitle">Industrial IoT Dashboard · Hack Malenadu '26</div>
+    <div class="kc-badge">🔐 Keycloak SSO · OpenID Connect</div>
+    <input class="login-field" id="login-user" type="text" placeholder="Username" value="admin" />
+    <input class="login-field" id="login-pass" type="password" placeholder="Password" value="admin123" />
+    <button class="login-btn" id="login-btn" onclick="attemptLogin()">🔑 Sign In via Keycloak</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-info">
+      Demo credentials: <strong>admin / admin123</strong> or <strong>operator / op123</strong><br>
+      Realm: <strong>factory-floor</strong> · Client: <strong>pred-maint-dashboard</strong><br>
+      Auth flow: Authorization Code + PKCE (simulated)
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr" id="app-header" style="display:none">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="hdr-logo">🏭 US 4<span> / PredictiveMaintenance</span></div>
+    <div class="live-dot"></div>
+    <div class="hdr-time" id="hdrtime"></div>
+  </div>
+  <div class="hdr-right">
+    <div class="hdr-user" id="hdr-user"><div class="avatar">A</div><span>admin@factory</span></div>
+    <div class="db-badge">💾 SQLite</div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <span class="theme-toggle-label">☀</span>
+      <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle Light/Dark Mode"></div>
+      <span class="theme-toggle-label">🌙</span>
+    </div>
+    <button class="hdr-btn active" onclick="setView('live')">Live</button>
+    <button class="hdr-btn" onclick="setView('history')">7d History</button>
+    <button class="hdr-btn" onclick="callPostAlert()">↑ Alert</button>
+    <button class="hdr-btn" onclick="callSchedule()">⊕ Sched</button>
+    <button class="hdr-btn" onclick="exportDB()">💾 Export</button>
+    <button class="hdr-btn logout" onclick="doLogout()">⏻</button>
+  </div>
+</div>
+
+<!-- CRITICAL STRIPE -->
+<div class="crit-stripe" id="crit-stripe"></div>
+
+<!-- MASTER STATUS BAR -->
+<div class="master-bar" id="master-bar" style="display:none">
+  <div class="master-seg">
+    <div class="ms-label">Fleet Status</div>
+    <div class="ms-val ok" id="fleet-status">NOMINAL</div>
+    <div class="ms-sub" id="fleet-sub">4/4 machines online</div>
+  </div>
+  <div class="master-seg">
+    <div class="ms-label">Active Alerts</div>
+    <div class="ms-val warn" id="alert-count">0</div>
+    <div class="ms-sub" id="alert-sub">0 warning · 0 critical</div>
+  </div>
+  <div class="master-seg">
+    <div class="ms-label">Highest Risk</div>
+    <div class="ms-val crit" id="highest-risk">—</div>
+    <div class="ms-sub">vibration anomaly + drift</div>
+  </div>
+  <div class="master-seg">
+    <div class="ms-label">Next Maintenance</div>
+    <div class="ms-val info">CNC_03</div>
+    <div class="ms-sub">Auto-scheduled by CBM</div>
+  </div>
+  <div class="master-seg">
+    <div class="ms-label">Data Points/min</div>
+    <div class="ms-val info" id="dpm">240</div>
+    <div class="ms-sub">4 streams × 60s</div>
+  </div>
+  <div class="master-seg">
+    <div class="ms-label">DB Rows</div>
+    <div class="ms-val info" id="db-rows">0</div>
+    <div class="ms-sub" id="db-sub">SQLite in-memory</div>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="main" id="main-layout" style="display:none">
+  <div class="left">
+
+    <!-- SENSOR TOGGLES -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-size:10px;color:var(--txt3);letter-spacing:.07em">SENSOR MODULES:</span>
+      <div class="sensor-toggles" id="sensor-toggles"></div>
+    </div>
+
+    <!-- MACHINE CARDS GRID -->
+    <div class="machines-grid" id="machines-grid"></div>
+
+    <!-- DETAIL VIEW -->
+    <div class="detail-section" id="detail-section">
+      <div class="ds-title">
+        <span id="detail-title">CNC_03 — DETAIL VIEW</span>
+        <span class="tag" id="detail-tag">CRITICAL</span>
+        <span class="suppressed-indicator" id="suppressed-indicator">🔇 Suppressed: 0 spikes</span>
+      </div>
+      <div class="sensor-tabs" id="sensor-tabs"></div>
+      <div class="chart-wrap" id="chart-area"><canvas id="main-chart"></canvas></div>
+      <div class="chart-legend">
+        <div class="cl-item"><div class="cl-dot" style="background:var(--blue)"></div> Live</div>
+        <div class="cl-item"><div class="cl-dot" style="background:rgba(74,158,255,.3);width:12px"></div> μ±2σ band</div>
+        <div class="cl-item"><div class="cl-dot" style="background:var(--red);width:16px;border-top:1px dashed var(--red)"></div> Threshold</div>
+        <div class="cl-item"><div class="cl-dot" style="background:var(--red);width:5px;height:5px;border-radius:50%"></div> Spike</div>
+        <div class="cl-item"><div class="cl-dot" style="background:var(--amber);width:12px;height:4px;border-radius:2px;opacity:.7"></div> Drift</div>
+      </div>
+      <div style="margin-top:10px">
+        <div style="font-size:10px;color:var(--txt3);letter-spacing:.07em;margin-bottom:5px">BASELINE ANALYSIS — 7-DAY WINDOW · <span style="color:var(--amber)">Per-machine, per-sensor dynamic baselines (μ/σ unique per CNC)</span></div>
+        <table class="bl-table" id="baseline-table"></table>
+      </div>
+    </div>
+
+    <!-- NLP AI DIAGNOSTIC — MOVED BEFORE API LOG -->
+    <div class="nlp-section" id="nlp-section">
+      <div class="nlp-header">
+        <div class="nlp-header-icon">🧠</div>
+        <div>
+          <div class="nlp-header-text">AI DIAGNOSTIC AGENT <span class="nlp-header-sub">· Natural Language Query</span></div>
+        </div>
+      </div>
+      <div class="quick-asks" id="quick-asks">
+        <button class="quick-ask" onclick="quickAsk('Why is CNC_03 critical?')">❓ Why is CNC_03 critical?</button>
+        <button class="quick-ask" onclick="quickAsk('Root cause for vibration spike?')">🔍 Root cause for vib spike?</button>
+        <button class="quick-ask" onclick="quickAsk('When should I schedule maintenance?')">🔧 When to schedule maint?</button>
+        <button class="quick-ask" onclick="quickAsk('Show compound anomaly status')">⚠ Compound anomaly?</button>
+        <button class="quick-ask" onclick="quickAsk('What is the drift trend?')">📈 Drift trend?</button>
+        <button class="quick-ask" onclick="quickAsk('Show noise suppression stats')">🔇 Noise suppression?</button>
+      </div>
+      <div class="nlp-input-row">
+        <input class="nlp-input" id="nlp-input" placeholder="Ask about anomaly, risk, root cause, scheduling..." />
+        <button class="nlp-send" onclick="sendNLP()">Ask AI →</button>
+      </div>
+      <div class="nlp-resp" id="nlp-resp">👈 Select a machine above, then ask a diagnostic question. The AI agent explains anomaly classification (spike/drift/compound), risk scores, and recommends actions in plain English.</div>
+    </div>
+
+    <!-- API CALL LOG -->
+    <div class="detail-section" style="padding:0">
+      <div class="ds-title" style="padding:8px 12px 6px"><span>API CALL LOG</span><span class="tag" id="api-count">0 calls</span></div>
+      <div class="api-log" id="api-log"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right">
+    <div class="rpanel-section" style="flex-shrink:0">
+      <div class="rp-title">Active Alerts <span id="alert-badge" style="color:var(--red);font-weight:700"></span></div>
+      <div id="alerts-list"></div>
+    </div>
+    <div class="rpanel-section" style="flex-shrink:0">
+      <div class="rp-title">Maintenance Queue — CBM Priority</div>
+      <div id="sched-list"></div>
+      <div class="cbm-tooltip">
+        <strong>Condition-Based Maintenance (CBM) Priority:</strong><br>
+        • <span style="color:var(--red)">P1 URGENT</span> (Risk ≥90%): Within <strong>30 min</strong><br>
+        • <span style="color:var(--amber)">P2 HIGH</span> (Risk 70–89%): Within <strong>2 hours</strong><br>
+        • <span style="color:var(--cyan)">P3 PLANNED</span> (Risk 40–69%): Within <strong>8 hours</strong>
+      </div>
+    </div>
+    <div class="rpanel-section" style="flex:1">
+      <div class="rp-title">Risk Leaderboard</div>
+      <div id="risk-board"></div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar" id="status-bar" style="display:none">
+  <div class="sb-item"><div class="sb-dot ok" id="sse-dot"></div><span id="sse-label">SSE Streams</span></div>
+  <div class="sb-item"><div class="sb-dot ok"></div>Baseline</div>
+  <div class="sb-item"><div class="sb-dot ok"></div>Anomaly Detect</div>
+  <div class="sb-item"><div class="sb-dot ok" id="nlp-dot"></div>NLP Agent</div>
+  <div class="sb-item"><div class="sb-dot ok"></div>Scheduler</div>
+  <div class="sb-item"><div class="sb-dot ok" id="db-dot"></div><span id="db-label">SQLite</span></div>
+  <div class="sb-item"><div class="sb-dot ok" id="kc-dot"></div>Keycloak</div>
+  <div style="flex:1"></div>
+  <div style="color:var(--txt3)">v2.1 · Hack Malenadu '26 · for sure</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/sql-wasm.js"></script>
+<script>
+// =============================================
+// THEME SYSTEM
+// =============================================
+function toggleTheme(){
+  const html=document.documentElement;
+  const current=html.getAttribute('data-theme');
+  const next=current==='dark'?'light':'dark';
+  html.setAttribute('data-theme',next);
+  localStorage.setItem('theme',next);
+  if(state.chartInstance){setTimeout(()=>initChart(),50);}
+}
+(function(){const saved=localStorage.getItem('theme');if(saved)document.documentElement.setAttribute('data-theme',saved)})();
+
+// =============================================
+// KEYCLOAK AUTH SIMULATION
+// =============================================
+const USERS={
+  admin:{pass:'admin123',role:'admin',name:'Admin',email:'admin@factory.io'},
+  operator:{pass:'op123',role:'operator',name:'Operator',email:'op@factory.io'},
+};
+let currentUser=null,keycloakToken=null;
+
+function attemptLogin(){
+  const u=document.getElementById('login-user').value.trim();
+  const p=document.getElementById('login-pass').value;
+  const err=document.getElementById('login-error');
+  if(!USERS[u]||USERS[u].pass!==p){err.textContent='⚠ Authentication failed. Invalid credentials.';return;}
+  err.textContent='';
+  currentUser={...USERS[u],username:u};
+  keycloakToken={
+    access_token:'eyJ'+btoa(JSON.stringify({sub:u,realm_access:{roles:[currentUser.role]},exp:Date.now()+3600000})),
+    token_type:'Bearer',expires_in:3600,
+    refresh_token:'rt_'+Math.random().toString(36).slice(2),
+    scope:'openid profile email',
+    session_state:crypto.randomUUID?crypto.randomUUID():Math.random().toString(36),
+  };
+  sessionStorage.setItem('kc_token',JSON.stringify(keycloakToken));
+  sessionStorage.setItem('kc_user',JSON.stringify(currentUser));
+  showApp();
+}
+
+function showApp(){
+  document.getElementById('login-overlay').classList.add('hidden');
+  ['app-header','master-bar','main-layout','status-bar'].forEach(id=>document.getElementById(id).style.display='');
+  document.querySelector('.hdr-user .avatar').textContent=currentUser.name[0];
+  document.querySelector('.hdr-user span').textContent=currentUser.email;
+  initApp();
+}
+
+function doLogout(){
+  const ss=keycloakToken?.session_state;
+  sessionStorage.clear();currentUser=null;keycloakToken=null;
+  document.getElementById('login-overlay').classList.remove('hidden');
+  ['app-header','master-bar','main-layout','status-bar'].forEach(id=>document.getElementById(id).style.display='none');
+  if(tickInterval)clearInterval(tickInterval);
+  logAPI('POST','/auth/logout','session='+ss,'200');
+}
+
+(function(){
+  const u=sessionStorage.getItem('kc_user'),t=sessionStorage.getItem('kc_token');
+  if(u&&t){currentUser=JSON.parse(u);keycloakToken=JSON.parse(t);showApp();}
+})();
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')attemptLogin()});
+
+// =============================================
+// SQLite DATABASE
+// =============================================
+let sqlDB=null,SQL=null;
+
+async function initSQLite(){
+  try{
+    SQL=await initSqlJs({locateFile:f=>`https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/${f}`});
+    sqlDB=new SQL.Database();
+    sqlDB.run(`CREATE TABLE IF NOT EXISTS sensor_readings(id INTEGER PRIMARY KEY AUTOINCREMENT,machine TEXT,sensor TEXT,value REAL,z_score REAL,anomaly_type TEXT DEFAULT 'nominal',risk_score INTEGER,timestamp TEXT)`);
+    sqlDB.run(`CREATE TABLE IF NOT EXISTS alerts(id INTEGER PRIMARY KEY AUTOINCREMENT,machine TEXT,type TEXT,severity TEXT,message TEXT,risk INTEGER,timestamp TEXT)`);
+    sqlDB.run(`CREATE TABLE IF NOT EXISTS maintenance_schedule(id INTEGER PRIMARY KEY AUTOINCREMENT,machine TEXT,priority INTEGER,description TEXT,scheduled_time TEXT,created_at TEXT)`);
+    sqlDB.run(`CREATE TABLE IF NOT EXISTS auth_log(id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT,action TEXT,timestamp TEXT)`);
+    sqlDB.run(`INSERT INTO auth_log(username,action,timestamp)VALUES(?,?,?)`,[currentUser?.username||'?','login',new Date().toISOString()]);
+    document.getElementById('db-label').textContent='SQLite ✓';
+    logAPI('GET','/db/init','4 tables created','200');
+  }catch(e){
+    console.error('SQLite init failed:',e);
+    document.getElementById('db-dot').className='sb-dot warn';
+    document.getElementById('db-label').textContent='SQLite ✗';
+  }
+}
+
+function dbInsert(machine,sensor,value,z,aType,risk){
+  if(!sqlDB)return;
+  sqlDB.run(`INSERT INTO sensor_readings(machine,sensor,value,z_score,anomaly_type,risk_score,timestamp)VALUES(?,?,?,?,?,?,?)`,[machine,sensor,value,z,aType,risk,new Date().toISOString()]);
+}
+function dbInsertAlert(machine,type,sev,msg,risk){
+  if(!sqlDB)return;
+  sqlDB.run(`INSERT INTO alerts(machine,type,severity,message,risk,timestamp)VALUES(?,?,?,?,?,?)`,[machine,type,sev,msg,risk,new Date().toISOString()]);
+}
+function dbRowCount(){if(!sqlDB)return 0;const r=sqlDB.exec('SELECT COUNT(*)FROM sensor_readings');return r.length?r[0].values[0][0]:0;}
+function exportDB(){
+  if(!sqlDB)return;
+  const d=sqlDB.export();const b=new Blob([d],{type:'application/octet-stream'});
+  const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='pred_maint.sqlite';a.click();URL.revokeObjectURL(u);
+  logAPI('GET','/db/export','binary','200');
+}
+
+// ================= GLOBAL STATE (UNCHANGED) =================
+let state = {
+  readings: {},
+  history: {},
+  alerts: [],
+  selectedMachine: null,
+  chart: null
+};
+
+// ================= API BASE =================
+const BASE_URL = "http://localhost:8000"; // change later
+
+
+// ================= LOAD MACHINES =================
+async function apiLoadMachines(){
+  const res = await fetch(BASE_URL + "/machines");
+  const data = await res.json();
+
+  data.forEach(m=>{
+    state.readings[m.id] = {};
+  });
+
+  state.selectedMachine = data[0]?.id;
+
+  renderMachines(); // YOUR EXISTING UI
+}
+
+
+// ================= STREAM DATA (REPLACES FAKE DATA) =================
+async function apiStream(){
+
+  const id = state.selectedMachine;
+  if(!id) return;
+
+  const res = await fetch(`${BASE_URL}/stream/${id}`);
+  const d = await res.json();
+
+  state.readings[id] = {
+    temp: d.temperature,
+    vib: d.vibration,
+    rpm: d.rpm,
+    curr: d.current,
+    status: d.status
+  };
+
+  updateChartWithNewPoint(id, d); // YOUR EXISTING FUNCTION
+  renderMachines();
+}
+
+
+// ================= HISTORY =================
+async function apiHistory(id){
+
+  const res = await fetch(`${BASE_URL}/history/${id}`);
+  const data = await res.json();
+
+  state.history[id] = data;
+
+  initChart(id); // YOUR EXISTING CHART FUNCTION
+}
+
+
+// ================= ALERTS =================
+async function apiAlerts(){
+
+  const res = await fetch(BASE_URL + "/alerts");
+  const data = await res.json();
+
+  state.alerts = data;
+
+  renderAlerts(); // YOUR EXISTING UI
+}
+
+
+// ================= CREATE ALERT =================
+async function apiCreateAlert(){
+
+  await fetch(BASE_URL + "/alert",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      machine_id: state.selectedMachine,
+      type:"manual"
+    })
+  });
+
+  apiAlerts();
+}
+
+
+// ================= SCHEDULE =================
+async function apiSchedule(){
+
+  await fetch(BASE_URL + "/schedule-maintenance",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      machine_id: state.selectedMachine,
+      priority:"high"
+    })
+  });
+
+  alert("Maintenance Scheduled");
+}
+
+
+// ================= INIT APP =================
+function startApp(){
+
+  apiLoadMachines();
+  apiAlerts();
+
+  // load history for first machine
+  setTimeout(()=>{
+    if(state.selectedMachine){
+      apiHistory(state.selectedMachine);
+    }
+  },500);
+
+  // LIVE STREAM (replaces simulation)
+  setInterval(apiStream, 2000);
+}
+
+
+// ================= LOGIN SUCCESS =================
+// Wherever your login succeeds, call this:
+function showApp(){
+  document.getElementById("login-overlay").style.display="none";
+
+  document.getElementById("app-header").style.display="";
+  document.getElementById("master-bar").style.display="";
+  document.getElementById("main-layout").style.display="";
+  document.getElementById("status-bar").style.display="";
+
+  startApp(); // 🔥 IMPORTANT
+}
+
+</script>
+</body>
+</html>
+
+
