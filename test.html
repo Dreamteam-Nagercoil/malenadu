@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Predictive Maintenance Dashboard</title>
+
+<style>
+body {
+  background: #0a0c10;
+  color: #c8d0dc;
+  font-family: monospace;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 20px;
+}
+
+.card {
+  background: #111418;
+  border: 1px solid #1e2530;
+  padding: 15px;
+}
+
+.badge.running { color: #00ff88; }
+.badge.warning { color: #ffcc00; }
+.badge.fault   { color: #ff3355; }
+
+.metric { margin: 5px 0; }
+
+.alerts {
+  padding: 20px;
+  border-top: 1px solid #1e2530;
+}
+</style>
+</head>
+
+<body>
+
+<h2 style="padding:20px;">🏭 Predictive Maintenance Dashboard</h2>
+
+<div class="grid" id="grid"></div>
+
+<div class="alerts">
+  <h3>🚨 Alerts</h3>
+  <div id="alerts"></div>
+</div>
+
+<script>
+const BASE = "http://localhost:5000";
+const MACHINES = ["CNC_01","CNC_02","PUMP_03","CONVEYOR_04"];
+
+const latest = {};
+
+// -----------------------
+// BUILD UI
+// -----------------------
+function createCard(id) {
+  const div = document.createElement("div");
+  div.className = "card";
+  div.id = "card-" + id;
+
+  div.innerHTML = `
+    <h3>${id}</h3>
+    <div id="status-${id}" class="badge">connecting...</div>
+
+    <div class="metric">Temp: <span id="temp-${id}">-</span></div>
+    <div class="metric">Vibration: <span id="vib-${id}">-</span></div>
+    <div class="metric">RPM: <span id="rpm-${id}">-</span></div>
+    <div class="metric">Current: <span id="cur-${id}">-</span></div>
+    <div class="metric">Risk: <span id="risk-${id}">-</span></div>
+  `;
+  return div;
+}
+
+const grid = document.getElementById("grid");
+MACHINES.forEach(m => grid.appendChild(createCard(m)));
+
+// -----------------------
+// STATUS LOGIC
+// -----------------------
+function getStatus(risk) {
+  if (risk > 0.75) return "fault";
+  if (risk > 0.5) return "warning";
+  return "running";
+}
+
+// -----------------------
+// UPDATE UI
+// -----------------------
+function updateUI(m, data) {
+  if (!data.raw) return;
+
+  document.getElementById(`temp-${m}`).textContent = data.raw.temperature_C.toFixed(2);
+  document.getElementById(`vib-${m}`).textContent  = data.raw.vibration_mm_s.toFixed(2);
+  document.getElementById(`rpm-${m}`).textContent  = data.raw.rpm;
+  document.getElementById(`cur-${m}`).textContent  = data.raw.current_A.toFixed(2);
+  document.getElementById(`risk-${m}`).textContent = data.risk.toFixed(2);
+
+  const status = getStatus(data.risk);
+  const badge = document.getElementById(`status-${m}`);
+  badge.textContent = status.toUpperCase();
+  badge.className = "badge " + status;
+
+  latest[m] = data;
+}
+
+// -----------------------
+// ALERTS
+// -----------------------
+function updateAlerts() {
+  const el = document.getElementById("alerts");
+
+  const risky = Object.values(latest).filter(d => d.risk > 0.7);
+
+  if (risky.length === 0) {
+    el.innerHTML = "No alerts";
+    return;
+  }
+
+  el.innerHTML = risky.map(d => `
+    <div>
+      <b>${d.machine_id}</b> → Risk ${d.risk.toFixed(2)}
+    </div>
+  `).join("");
+}
+
+setInterval(updateAlerts, 1000);
+
+// -----------------------
+// SSE CONNECTION
+// -----------------------
+function connect(machine) {
+  const es = new EventSource(`${BASE}/stream/${machine}`);
+
+  es.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    updateUI(machine, data);
+  };
+
+  es.onerror = () => {
+    es.close();
+    setTimeout(() => connect(machine), 3000);
+  };
+}
+
+MACHINES.forEach(connect);
+
+</script>
+
+</body>
+</html>
