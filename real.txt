@@ -1,11 +1,3 @@
-
-<script>
-
-
-</script>
-
-
-
 <!DOCTYPE html>
 <html data-theme="dark">
 <head>
@@ -127,12 +119,8 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
 .risk-med{background:var(--amber-bg);color:var(--amber)}
 .risk-high{background:var(--red-bg);color:var(--red);animation:riskFlash 1.5s ease-in-out infinite}
 @keyframes riskFlash{0%,100%{background:rgba(240,80,80,.12)}50%{background:rgba(240,80,80,.22)}}
-
-/* COMPOUND BADGE */
 .compound-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.35);font-size:9px;color:var(--purple);font-weight:700;animation:compoundPulse 2s ease-in-out infinite}
 @keyframes compoundPulse{0%,100%{opacity:1;box-shadow:0 0 8px rgba(167,139,250,.2)}50%{opacity:.6;box-shadow:none}}
-
-/* SENSOR GAUGES */
 .mc-sensors{padding:8px 10px;display:flex;flex-direction:column;gap:6px}
 .sensor-row{display:flex;align-items:center;gap:6px}
 .sn-label{width:72px;color:var(--txt2);font-size:10px;white-space:nowrap}
@@ -146,8 +134,6 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
 .sn-val{width:52px;text-align:right;font-size:10px;font-weight:600}
 .sn-val.ok{color:var(--green)}.sn-val.warn{color:var(--amber)}.sn-val.crit{color:var(--red);animation:valBlink 1s infinite}
 @keyframes valBlink{0%,100%{opacity:1}50%{opacity:.5}}
-
-/* RISK RING */
 .mc-footer{display:flex;align-items:center;gap:8px;padding:6px 10px;border-top:1px solid var(--border);background:var(--bg3)}
 .risk-ring{position:relative;width:34px;height:34px}
 .risk-ring svg{transform:rotate(-90deg)}
@@ -162,12 +148,8 @@ body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Mono',monospace
 .ds-title span{flex:1}
 .ds-title .tag{font-size:9px;padding:2px 8px;border-radius:4px;background:var(--bg4);color:var(--txt3);letter-spacing:.03em;text-transform:none;transition:all .3s}
 .ds-title .tag.crit-tag{background:rgba(240,80,80,.15);color:var(--red);border:1px solid rgba(240,80,80,.3)}
-
-/* SUPPRESSED INDICATOR */
 .suppressed-indicator{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;background:rgba(85,92,120,.1);border:1px solid rgba(85,92,120,.2);font-size:9px;color:var(--txt3);margin-left:auto;transition:all .3s}
 .suppressed-indicator.active{background:rgba(245,166,35,.08);border-color:rgba(245,166,35,.3);color:var(--amber);box-shadow:0 0 8px rgba(245,166,35,.1)}
-
-/* SENSOR TABS */
 .sensor-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:8px;overflow-x:auto}
 .stab{padding:5px 10px;font-size:10px;color:var(--txt3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
 .stab:hover{color:var(--txt2)}
@@ -269,6 +251,11 @@ canvas{display:block;width:100%!important}
 .crit-stripe.show{display:block}
 @keyframes stripeMove{0%{background-position:0 0}100%{background-position:200% 0}}
 
+/* API CONNECTION STATUS */
+.api-conn-banner{padding:4px 12px;font-size:10px;display:flex;align-items:center;gap:6px;background:rgba(245,166,35,.06);border-bottom:1px solid rgba(245,166,35,.2);color:var(--amber)}
+.api-conn-banner.connected{background:rgba(34,201,122,.05);border-bottom-color:rgba(34,201,122,.15);color:var(--green)}
+.api-conn-banner.hidden{display:none}
+
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:2px}
@@ -320,6 +307,9 @@ canvas{display:block;width:100%!important}
   </div>
 </div>
 
+<!-- API CONNECTION BANNER -->
+<div class="api-conn-banner" id="api-banner">⚡ Connecting to sensor API at 100.107.213.66:3000 ...</div>
+
 <!-- CRITICAL STRIPE -->
 <div class="crit-stripe" id="crit-stripe"></div>
 
@@ -338,17 +328,17 @@ canvas{display:block;width:100%!important}
   <div class="master-seg">
     <div class="ms-label">Highest Risk</div>
     <div class="ms-val crit" id="highest-risk">—</div>
-    <div class="ms-sub">vibration anomaly + drift</div>
+    <div class="ms-sub">from real risk score API</div>
   </div>
   <div class="master-seg">
     <div class="ms-label">Next Maintenance</div>
-    <div class="ms-val info">CNC_03</div>
+    <div class="ms-val info" id="next-maint">—</div>
     <div class="ms-sub">Auto-scheduled by CBM</div>
   </div>
   <div class="master-seg">
     <div class="ms-label">Data Points/min</div>
-    <div class="ms-val info" id="dpm">240</div>
-    <div class="ms-sub">4 streams × 60s</div>
+    <div class="ms-val info" id="dpm">—</div>
+    <div class="ms-sub">Live API streams</div>
   </div>
   <div class="master-seg">
     <div class="ms-label">DB Rows</div>
@@ -373,9 +363,9 @@ canvas{display:block;width:100%!important}
     <!-- DETAIL VIEW -->
     <div class="detail-section" id="detail-section">
       <div class="ds-title">
-        <span id="detail-title">CNC_03 — DETAIL VIEW</span>
-        <span class="tag" id="detail-tag">CRITICAL</span>
-        <span class="suppressed-indicator" id="suppressed-indicator">🔇 Suppressed: 0 spikes</span>
+        <span id="detail-title">— DETAIL VIEW</span>
+        <span class="tag" id="detail-tag">—</span>
+        <span class="suppressed-indicator" id="suppressed-indicator">🔇 Suppressed: 0 transients</span>
       </div>
       <div class="sensor-tabs" id="sensor-tabs"></div>
       <div class="chart-wrap" id="chart-area"><canvas id="main-chart"></canvas></div>
@@ -387,22 +377,22 @@ canvas{display:block;width:100%!important}
         <div class="cl-item"><div class="cl-dot" style="background:var(--amber);width:12px;height:4px;border-radius:2px;opacity:.7"></div> Drift</div>
       </div>
       <div style="margin-top:10px">
-        <div style="font-size:10px;color:var(--txt3);letter-spacing:.07em;margin-bottom:5px">BASELINE ANALYSIS — 7-DAY WINDOW · <span style="color:var(--amber)">Per-machine, per-sensor dynamic baselines (μ/σ unique per CNC)</span></div>
+        <div style="font-size:10px;color:var(--txt3);letter-spacing:.07em;margin-bottom:5px">BASELINE ANALYSIS — REAL API · <span style="color:var(--amber)">Per-machine, per-sensor dynamic baselines (μ/σ from API)</span></div>
         <table class="bl-table" id="baseline-table"></table>
       </div>
     </div>
 
-    <!-- NLP AI DIAGNOSTIC — MOVED BEFORE API LOG -->
+    <!-- NLP AI DIAGNOSTIC -->
     <div class="nlp-section" id="nlp-section">
       <div class="nlp-header">
         <div class="nlp-header-icon">🧠</div>
         <div>
-          <div class="nlp-header-text">AI DIAGNOSTIC AGENT <span class="nlp-header-sub">· Natural Language Query</span></div>
+          <div class="nlp-header-text">AI DIAGNOSTIC AGENT <span class="nlp-header-sub">· Natural Language Query (Real API Data)</span></div>
         </div>
       </div>
       <div class="quick-asks" id="quick-asks">
-        <button class="quick-ask" onclick="quickAsk('Why is CNC_03 critical?')">❓ Why is CNC_03 critical?</button>
-        <button class="quick-ask" onclick="quickAsk('Root cause for vibration spike?')">🔍 Root cause for vib spike?</button>
+        <button class="quick-ask" onclick="quickAsk('Why is this machine critical?')">❓ Why is it critical?</button>
+        <button class="quick-ask" onclick="quickAsk('Root cause for vibration spike?')">🔍 Root cause vib spike?</button>
         <button class="quick-ask" onclick="quickAsk('When should I schedule maintenance?')">🔧 When to schedule maint?</button>
         <button class="quick-ask" onclick="quickAsk('Show compound anomaly status')">⚠ Compound anomaly?</button>
         <button class="quick-ask" onclick="quickAsk('What is the drift trend?')">📈 Drift trend?</button>
@@ -412,7 +402,7 @@ canvas{display:block;width:100%!important}
         <input class="nlp-input" id="nlp-input" placeholder="Ask about anomaly, risk, root cause, scheduling..." />
         <button class="nlp-send" onclick="sendNLP()">Ask AI →</button>
       </div>
-      <div class="nlp-resp" id="nlp-resp">👈 Select a machine above, then ask a diagnostic question. The AI agent explains anomaly classification (spike/drift/compound), risk scores, and recommends actions in plain English.</div>
+      <div class="nlp-resp" id="nlp-resp">👈 Select a machine above, then ask a diagnostic question. The AI agent uses real sensor + risk + z-score data from the API.</div>
     </div>
 
     <!-- API CALL LOG -->
@@ -447,7 +437,7 @@ canvas{display:block;width:100%!important}
 
 <!-- STATUS BAR -->
 <div class="status-bar" id="status-bar" style="display:none">
-  <div class="sb-item"><div class="sb-dot ok" id="sse-dot"></div><span id="sse-label">SSE Streams</span></div>
+  <div class="sb-item"><div class="sb-dot ok" id="sse-dot"></div><span id="sse-label">API Streams</span></div>
   <div class="sb-item"><div class="sb-dot ok"></div>Baseline</div>
   <div class="sb-item"><div class="sb-dot ok"></div>Anomaly Detect</div>
   <div class="sb-item"><div class="sb-dot ok" id="nlp-dot"></div>NLP Agent</div>
@@ -455,7 +445,7 @@ canvas{display:block;width:100%!important}
   <div class="sb-item"><div class="sb-dot ok" id="db-dot"></div><span id="db-label">SQLite</span></div>
   <div class="sb-item"><div class="sb-dot ok" id="kc-dot"></div>Keycloak</div>
   <div style="flex:1"></div>
-  <div style="color:var(--txt3)">v2.1 · Hack Malenadu '26 · for sure</div>
+  <div style="color:var(--txt3)">v2.2-live · Hack Malenadu '26 · Real API</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -516,6 +506,7 @@ function doLogout(){
   document.getElementById('login-overlay').classList.remove('hidden');
   ['app-header','master-bar','main-layout','status-bar'].forEach(id=>document.getElementById(id).style.display='none');
   if(tickInterval)clearInterval(tickInterval);
+  if(apiPollInterval)clearInterval(apiPollInterval);
   logAPI('POST','/auth/logout','session='+ss,'200');
 }
 
@@ -564,145 +555,900 @@ function exportDB(){
   logAPI('GET','/db/export','binary','200');
 }
 
-// ================= GLOBAL STATE (UNCHANGED) =================
-let state = {
-  readings: {},
-  history: {},
-  alerts: [],
-  selectedMachine: null,
-  chart: null
+// =============================================
+// REAL SENSOR API INTEGRATION
+// BASE: http://100.107.213.66:3000/
+// Expected endpoints (adapt to your friend's actual routes):
+//   GET /sensors          → array of all machine sensor readings
+//   GET /sensors/:machine → readings for one machine
+//   GET /risk             → risk scores for all machines
+//   GET /risk/:machine    → risk score for one machine
+//   GET /zscore           → z-scores for all machines
+//   GET /zscore/:machine  → z-scores for one machine
+//   GET /nlp              → NLP diagnostic data
+//   GET /db               → SQL/database rows (optional)
+// =============================================
+const API_BASE = 'http://100.107.213.66:3000';
+let apiConnected = false;
+let apiPollInterval = null;
+let apiRawData = {}; // stores latest raw API response per machine
+
+// Discover available endpoints on first connect
+async function discoverAPI() {
+  try {
+    // Try root to see what the API offers
+    const res = await fetch(`${API_BASE}/`, {signal: AbortSignal.timeout(4000)});
+    if (res.ok) {
+      const data = await res.json().catch(()=>null);
+      console.log('[API] Root response:', data);
+    }
+  } catch(e) { /* silent */ }
+}
+
+// Main function: fetch all sensor data from real API
+async function fetchAllSensorData() {
+  const machines = MACHINES;
+  let anySuccess = false;
+
+  // Try fetching all sensors at once (most APIs have a /sensors or /data endpoint)
+  const bulkEndpoints = ['/sensors', '/data', '/readings', '/machines', '/api/sensors', '/api/data'];
+  
+  for (const endpoint of bulkEndpoints) {
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, {signal: AbortSignal.timeout(3000)});
+      if (res.ok) {
+        const data = await res.json();
+        logAPI('GET', endpoint, 'bulk', '200');
+        processBulkSensorResponse(data);
+        anySuccess = true;
+        break;
+      }
+    } catch(e) { /* try next */ }
+  }
+
+  // If bulk fails, try per-machine
+  if (!anySuccess) {
+    for (const m of machines) {
+      const machineKey = m.toLowerCase().replace('_', '-');
+      const perMachineEndpoints = [
+        `/sensors/${m}`, `/sensors/${machineKey}`,
+        `/data/${m}`, `/readings/${m}`,
+        `/${m}`, `/${machineKey}`
+      ];
+      for (const ep of perMachineEndpoints) {
+        try {
+          const res = await fetch(`${API_BASE}${ep}`, {signal: AbortSignal.timeout(3000)});
+          if (res.ok) {
+            const data = await res.json();
+            logAPI('GET', ep, m, '200');
+            processPerMachineSensorResponse(m, data);
+            anySuccess = true;
+            break;
+          }
+        } catch(e) { /* try next */ }
+      }
+    }
+  }
+
+  return anySuccess;
+}
+
+// Fetch risk scores from API
+async function fetchRiskScores() {
+  const riskEndpoints = ['/risk', '/risk-score', '/risk_score', '/scores', '/api/risk'];
+  for (const ep of riskEndpoints) {
+    try {
+      const res = await fetch(`${API_BASE}${ep}`, {signal: AbortSignal.timeout(3000)});
+      if (res.ok) {
+        const data = await res.json();
+        logAPI('GET', ep, 'risk scores', '200');
+        processRiskResponse(data);
+        return;
+      }
+    } catch(e) { /* try next */ }
+  }
+  // Try per-machine
+  for (const m of MACHINES) {
+    try {
+      const res = await fetch(`${API_BASE}/risk/${m}`, {signal: AbortSignal.timeout(2000)});
+      if (res.ok) {
+        const data = await res.json();
+        processPerMachineRisk(m, data);
+      }
+    } catch(e) {}
+  }
+}
+
+// Fetch Z-scores from API
+async function fetchZScores() {
+  const zEndpoints = ['/zscore', '/z-score', '/zscores', '/z_score', '/api/zscore'];
+  for (const ep of zEndpoints) {
+    try {
+      const res = await fetch(`${API_BASE}${ep}`, {signal: AbortSignal.timeout(3000)});
+      if (res.ok) {
+        const data = await res.json();
+        logAPI('GET', ep, 'z-scores', '200');
+        processZScoreResponse(data);
+        return;
+      }
+    } catch(e) { /* try next */ }
+  }
+}
+
+// Fetch NLP data from API
+async function fetchNLPData() {
+  const nlpEndpoints = ['/nlp', '/nlp/status', '/diagnostics', '/api/nlp'];
+  for (const ep of nlpEndpoints) {
+    try {
+      const res = await fetch(`${API_BASE}${ep}`, {signal: AbortSignal.timeout(3000)});
+      if (res.ok) {
+        const data = await res.json();
+        logAPI('GET', ep, 'nlp data', '200');
+        state.nlpAPIData = data;
+        return;
+      }
+    } catch(e) {}
+  }
+}
+
+// =============================================
+// API RESPONSE PROCESSORS
+// These handle different possible response shapes
+// =============================================
+
+// Handles bulk response like:
+// [{machine:"CNC_01", temp:75.2, vib:1.4, rpm:1480, curr:12.1, press:5.2, status:"running"}, ...]
+// or {CNC_01: {temp:75.2,...}, CNC_02:{...}}
+// or {data:[...]} wrapper
+function processBulkSensorResponse(data) {
+  // Unwrap common wrapper keys
+  const arr = Array.isArray(data) ? data 
+    : Array.isArray(data?.data) ? data.data 
+    : Array.isArray(data?.sensors) ? data.sensors
+    : Array.isArray(data?.readings) ? data.readings
+    : null;
+
+  if (arr) {
+    // Array of machine objects
+    arr.forEach(item => {
+      const m = normalizeMachineName(item.machine || item.machine_id || item.id || item.name);
+      if (m && MACHINES.includes(m)) {
+        applyRealSensorReading(m, item);
+      }
+    });
+  } else if (typeof data === 'object' && data !== null) {
+    // Object keyed by machine name
+    Object.entries(data).forEach(([key, val]) => {
+      const m = normalizeMachineName(key);
+      if (m && MACHINES.includes(m) && typeof val === 'object') {
+        applyRealSensorReading(m, val);
+      }
+    });
+  }
+}
+
+function processPerMachineSensorResponse(machine, data) {
+  // Unwrap if needed
+  const reading = data?.data || data?.reading || data?.sensor || data;
+  if (typeof reading === 'object') {
+    applyRealSensorReading(machine, reading);
+  }
+}
+
+// Handles risk score response:
+// [{machine:"CNC_01", risk_score:45}, ...] or {CNC_01:45, CNC_02:72}
+// or {CNC_01:{risk_score:45,...}, ...}
+function processRiskResponse(data) {
+  const arr = Array.isArray(data) ? data 
+    : Array.isArray(data?.data) ? data.data 
+    : Array.isArray(data?.risks) ? data.risks : null;
+
+  if (arr) {
+    arr.forEach(item => {
+      const m = normalizeMachineName(item.machine || item.machine_id || item.id || item.name);
+      const risk = parseFloat(item.risk_score ?? item.risk ?? item.score ?? item.value ?? 0);
+      if (m && MACHINES.includes(m) && !isNaN(risk)) {
+        state.apiRiskScores[m] = Math.round(risk);
+      }
+    });
+  } else if (typeof data === 'object') {
+    Object.entries(data).forEach(([key, val]) => {
+      const m = normalizeMachineName(key);
+      if (m && MACHINES.includes(m)) {
+        const risk = typeof val === 'number' ? val 
+          : parseFloat(val?.risk_score ?? val?.risk ?? val?.score ?? val ?? 0);
+        if (!isNaN(risk)) state.apiRiskScores[m] = Math.round(risk);
+      }
+    });
+  }
+}
+
+function processPerMachineRisk(machine, data) {
+  const risk = parseFloat(data?.risk_score ?? data?.risk ?? data?.score ?? data?.value ?? data ?? 0);
+  if (!isNaN(risk)) state.apiRiskScores[machine] = Math.round(risk);
+}
+
+// Handles z-score response (same shape flexibility as risk)
+function processZScoreResponse(data) {
+  const arr = Array.isArray(data) ? data 
+    : Array.isArray(data?.data) ? data.data 
+    : Array.isArray(data?.zscores) ? data.zscores : null;
+
+  if (arr) {
+    arr.forEach(item => {
+      const m = normalizeMachineName(item.machine || item.machine_id || item.id);
+      if (m && MACHINES.includes(m)) {
+        // z-scores per sensor
+        ['temp','vib','rpm','curr','press'].forEach(s => {
+          const z = parseFloat(item[`${s}_z`] ?? item[`z_${s}`] ?? item[s] ?? item.z_score ?? 0);
+          if (!isNaN(z)) {
+            if (!state.apiZScores[m]) state.apiZScores[m] = {};
+            state.apiZScores[m][s] = z;
+          }
+        });
+        // Or a single z_score field
+        const zAll = parseFloat(item.z_score ?? item.zscore ?? item.z ?? NaN);
+        if (!isNaN(zAll)) {
+          if (!state.apiZScores[m]) state.apiZScores[m] = {};
+          state.apiZScores[m]._overall = zAll;
+        }
+      }
+    });
+  } else if (typeof data === 'object') {
+    Object.entries(data).forEach(([key, val]) => {
+      const m = normalizeMachineName(key);
+      if (m && MACHINES.includes(m)) {
+        if (!state.apiZScores[m]) state.apiZScores[m] = {};
+        if (typeof val === 'object') {
+          Object.assign(state.apiZScores[m], val);
+        } else {
+          state.apiZScores[m]._overall = parseFloat(val) || 0;
+        }
+      }
+    });
+  }
+}
+
+// =============================================
+// Apply real sensor reading to state
+// Maps whatever field names the API sends to our internal model
+// =============================================
+function applyRealSensorReading(machine, raw) {
+  if (!raw || typeof raw !== 'object') return;
+  apiRawData[machine] = raw;
+
+  // Field name mapping — covers many common naming conventions
+  const temp = parseFloat(
+    raw.temp ?? raw.temperature ?? raw.temp_c ?? raw.temperature_c ?? raw.t ?? NaN
+  );
+  const vib = parseFloat(
+    raw.vib ?? raw.vibration ?? raw.vibration_mms ?? raw.vib_mms ?? raw.v ?? NaN
+  );
+  const rpm = parseFloat(
+    raw.rpm ?? raw.speed ?? raw.spindle_rpm ?? raw.motor_rpm ?? raw.r ?? NaN
+  );
+  const curr = parseFloat(
+    raw.curr ?? raw.current ?? raw.current_a ?? raw.amp ?? raw.ampere ?? raw.c ?? NaN
+  );
+  const press = parseFloat(
+    raw.press ?? raw.pressure ?? raw.pressure_bar ?? raw.bar ?? raw.p ?? NaN
+  );
+  const statusRaw = raw.status ?? raw.machine_status ?? raw.state ?? 'running';
+  const status = String(statusRaw).toLowerCase();
+
+  // Only update if we got valid numbers
+  const r = state.readings[machine];
+  if (!r) return;
+  if (!isNaN(temp)) r.temp = Math.round(temp * 10) / 10;
+  if (!isNaN(vib))  r.vib  = Math.round(vib  * 100) / 100;
+  if (!isNaN(rpm))  r.rpm  = Math.round(rpm);
+  if (!isNaN(curr)) r.curr = Math.round(curr * 10) / 10;
+  if (!isNaN(press)) r.press = Math.round(press * 10) / 10;
+  r.status = ['fault','warning','running','idle','error'].includes(status) ? status : 'running';
+
+  // If risk score comes embedded in sensor reading
+  const embeddedRisk = parseFloat(raw.risk_score ?? raw.risk ?? raw.score ?? NaN);
+  if (!isNaN(embeddedRisk)) state.apiRiskScores[machine] = Math.round(embeddedRisk);
+
+  // If z-scores come embedded
+  ['temp','vib','rpm','curr','press'].forEach(s => {
+    const z = parseFloat(raw[`${s}_z`] ?? raw[`z_${s}`] ?? raw[`${s}_zscore`] ?? NaN);
+    if (!isNaN(z)) {
+      if (!state.apiZScores[machine]) state.apiZScores[machine] = {};
+      state.apiZScores[machine][s] = z;
+    }
+  });
+  const zAll = parseFloat(raw.z_score ?? raw.zscore ?? raw.z ?? NaN);
+  if (!isNaN(zAll)) {
+    if (!state.apiZScores[machine]) state.apiZScores[machine] = {};
+    state.apiZScores[machine]._overall = zAll;
+  }
+
+  // If anomaly type comes from API
+  const aType = raw.anomaly_type ?? raw.anomaly ?? raw.classification ?? null;
+  if (aType) {
+    const normalized = String(aType).toLowerCase();
+    ['temp','vib','rpm','curr'].forEach(s => {
+      if (!state.anomalyClassification[machine]) return;
+      state.anomalyClassification[machine][s] = 
+        ['spike','drift','compound','nominal'].includes(normalized) ? normalized : 'nominal';
+    });
+  }
+}
+
+function normalizeMachineName(raw) {
+  if (!raw) return null;
+  const s = String(raw).toUpperCase().replace(/[-\s]/g,'_');
+  // Direct match
+  if (MACHINES.includes(s)) return s;
+  // Partial match (e.g. "01" → "CNC_01")
+  const found = MACHINES.find(m => m.includes(s) || s.includes(m.replace('CNC_','')));
+  return found || null;
+}
+
+// Main API polling loop
+async function pollAPI() {
+  const banner = document.getElementById('api-banner');
+  try {
+    const sensorOk = await fetchAllSensorData();
+    await fetchRiskScores();
+    await fetchZScores();
+    await fetchNLPData();
+
+    if (sensorOk && !apiConnected) {
+      apiConnected = true;
+      banner.textContent = '✓ Connected to sensor API at 100.107.213.66:3000 — Live data streaming';
+      banner.className = 'api-conn-banner connected';
+      setTimeout(() => banner.classList.add('hidden'), 4000);
+      logAPI('GET','/sensors','connected','200');
+    } else if (!sensorOk) {
+      apiConnected = false;
+      banner.textContent = '⚠ Sensor API unreachable (100.107.213.66:3000) — using baseline fallback';
+      banner.className = 'api-conn-banner';
+      banner.classList.remove('hidden');
+      // Fallback: keep last readings or generate small jitter on baselines
+      MACHINES.forEach(m => {
+        const r = state.readings[m];
+        const b = BASELINES[m];
+        if (r.temp === 0) {
+          // First load fallback with baseline values
+          r.temp = b.temp.mu + (Math.random()-0.5)*b.temp.sd;
+          r.vib  = b.vib.mu  + (Math.random()-0.5)*b.vib.sd;
+          r.rpm  = b.rpm.mu  + (Math.random()-0.5)*b.rpm.sd;
+          r.curr = b.curr.mu + (Math.random()-0.5)*b.curr.sd;
+          r.press= 5.2;
+          r.temp = Math.round(r.temp*10)/10;
+          r.vib  = Math.round(r.vib*100)/100;
+          r.rpm  = Math.round(r.rpm);
+          r.curr = Math.round(r.curr*10)/10;
+          r.status='running';
+        }
+      });
+    }
+  } catch(e) {
+    console.error('[API] Poll error:', e);
+  }
+}
+
+// =============================================
+// DATA MODEL
+// =============================================
+const MACHINES=['CNC_01','CNC_02','CNC_03','CNC_04'];
+let SENSOR_MODULES=[
+  {id:'temp',label:'Temp (°C)',unit:'°C',min:45,max:110,warn:85,crit:95,active:true},
+  {id:'vib',label:'Vib (mm/s)',unit:'mm/s',min:0,max:5,warn:2.5,crit:3.5,active:true},
+  {id:'rpm',label:'RPM',unit:'rpm',min:900,max:1600,warn:1520,crit:1560,active:true},
+  {id:'curr',label:'Current (A)',unit:'A',min:8,max:20,warn:15,crit:17,active:true},
+  {id:'press',label:'Pressure (bar)',unit:'bar',min:2,max:8,warn:6.5,crit:7.2,active:false},
+];
+
+// Baselines used for anomaly classification when API doesn't supply them
+// These will be overridden by API data if available
+const BASELINES={
+  CNC_01:{temp:{mu:74,sd:4},vib:{mu:1.3,sd:.25},rpm:{mu:1480,sd:22},curr:{mu:12.1,sd:1}},
+  CNC_02:{temp:{mu:78,sd:5},vib:{mu:1.6,sd:.3},rpm:{mu:1460,sd:28},curr:{mu:13.2,sd:1.2}},
+  CNC_03:{temp:{mu:82,sd:6},vib:{mu:2.1,sd:.4},rpm:{mu:1470,sd:25},curr:{mu:14.1,sd:1.3}},
+  CNC_04:{temp:{mu:71,sd:3.5},vib:{mu:1.1,sd:.2},rpm:{mu:1490,sd:18},curr:{mu:11.8,sd:.9}},
 };
 
-// ================= API BASE =================
-const BASE_URL = "http://localhost:8000"; // change later
+let state={
+  readings:{},history:{},alerts:[],schedule:[],
+  selectedMachine:'CNC_01',selectedSensor:'temp',
+  apiLog:[],apiCount:0,chartInstance:null,tick:0,view:'live',
+  suppressedCounts:{},anomalyClassification:{},
+  streamStatus:{CNC_01:'active',CNC_02:'active',CNC_03:'active',CNC_04:'active'},
+  // NEW: stores data from real API
+  apiRiskScores:{CNC_01:0,CNC_02:0,CNC_03:0,CNC_04:0},
+  apiZScores:{},
+  nlpAPIData:null,
+};
+let tickInterval=null;
 
+MACHINES.forEach(m=>{
+  state.readings[m]={temp:0,vib:0,rpm:0,curr:0,press:0,status:'running'};
+  state.history[m]={temp:[],vib:[],rpm:[],curr:[],press:[],labels:[],spikeFlags:{}};
+  state.suppressedCounts[m]={temp:0,vib:0,rpm:0,curr:0};
+  state.anomalyClassification[m]={temp:'nominal',vib:'nominal',rpm:'nominal',curr:'nominal'};
+  SENSOR_MODULES.forEach(s=>{state.history[m].spikeFlags[s.id]=[]});
+});
 
-// ================= LOAD MACHINES =================
-async function apiLoadMachines(){
-  const res = await fetch(BASE_URL + "/machines");
-  const data = await res.json();
+let driftState={},transientBuffer={};
+MACHINES.forEach(m=>{driftState[m]={temp:0,vib:0,rpm:0,curr:0};transientBuffer[m]={temp:[],vib:[],rpm:[],curr:[]}});
 
-  data.forEach(m=>{
-    state.readings[m.id] = {};
+// =============================================
+// RISK CALCULATION — Uses real API risk score if available
+// Falls back to computed score if API hasn't provided one
+// =============================================
+function calcRisk(m, r) {
+  // Use API-provided risk score if available and non-zero
+  if (state.apiRiskScores[m] && state.apiRiskScores[m] > 0) {
+    return Math.min(state.apiRiskScores[m], 99);
+  }
+  // Fallback: compute from z-scores
+  const b=BASELINES[m];let sc=0;
+  ['temp','vib','rpm','curr'].forEach(s=>{
+    const mod=SENSOR_MODULES.find(x=>x.id===s);if(!mod||!mod.active)return;
+    // Use API z-score if available, else compute
+    const z = (state.apiZScores[m]?.[s] !== undefined)
+      ? Math.abs(state.apiZScores[m][s])
+      : Math.abs((r[s]-b[s].mu)/b[s].sd);
+    if(z>3)sc+=35;else if(z>2)sc+=18;else if(z>1.5)sc+=8;
+    driftState[m][s]=(driftState[m][s]*.9)+z*.1;
+    if(driftState[m][s]>1.8)sc+=10;
   });
+  const tZ = (state.apiZScores[m]?.temp !== undefined)
+    ? Math.abs(state.apiZScores[m].temp)
+    : Math.abs((r.temp-b.temp.mu)/b.temp.sd);
+  const vZ = (state.apiZScores[m]?.vib !== undefined)
+    ? Math.abs(state.apiZScores[m].vib)
+    : Math.abs((r.vib-b.vib.mu)/b.vib.sd);
+  if(tZ>2&&vZ>2)sc+=15;
+  if(r.status==='fault')sc+=20;if(r.status==='warning')sc+=8;
+  return Math.min(Math.round(sc),99);
+}
+function riskClass(r){return r>=70?'crit':r>=40?'warn':'ok'}
+function riskLabel(r){return r>=70?'CRITICAL':r>=40?'WARNING':'NOMINAL'}
 
-  state.selectedMachine = data[0]?.id;
-
-  renderMachines(); // YOUR EXISTING UI
+// =============================================
+// Z-SCORE HELPERS — use API z-score if present
+// =============================================
+function getZScore(m, sensor) {
+  if (state.apiZScores[m]?.[sensor] !== undefined) {
+    return state.apiZScores[m][sensor];
+  }
+  const b = BASELINES[m][sensor];
+  if (!b) return 0;
+  return (state.readings[m][sensor] - b.mu) / b.sd;
 }
 
-
-// ================= STREAM DATA (REPLACES FAKE DATA) =================
-async function apiStream(){
-
-  const id = state.selectedMachine;
-  if(!id) return;
-
-  const res = await fetch(`${BASE_URL}/stream/${id}`);
-  const d = await res.json();
-
-  state.readings[id] = {
-    temp: d.temperature,
-    vib: d.vibration,
-    rpm: d.rpm,
-    curr: d.current,
-    status: d.status
-  };
-
-  updateChartWithNewPoint(id, d); // YOUR EXISTING FUNCTION
-  renderMachines();
+// =============================================
+// ANOMALY CLASSIFICATION — uses API data or computes locally
+// =============================================
+function checkTransient(m,s,isA){
+  const buf=transientBuffer[m][s]||(transientBuffer[m][s]=[]);
+  buf.push(isA?1:0);if(buf.length>4)buf.shift();
+  const sus=buf.filter(v=>v).length>=3;
+  if(isA&&!sus)state.suppressedCounts[m][s]=(state.suppressedCounts[m][s]||0)+1;
+  return sus;
 }
 
-
-// ================= HISTORY =================
-async function apiHistory(id){
-
-  const res = await fetch(`${BASE_URL}/history/${id}`);
-  const data = await res.json();
-
-  state.history[id] = data;
-
-  initChart(id); // YOUR EXISTING CHART FUNCTION
+function classifyAnomaly(m,s,r){
+  // If the API provided anomaly classification, trust it
+  if (apiRawData[m]?.anomaly_type) {
+    return String(apiRawData[m].anomaly_type).toLowerCase();
+  }
+  const b=BASELINES[m][s];if(!b)return'nominal';
+  const z = Math.abs(getZScore(m, s));
+  const dr=driftState[m][s];
+  const elevated=['temp','vib','rpm','curr'].filter(ss=>{
+    return Math.abs(getZScore(m,ss))>2;
+  }).length;
+  if(elevated>=2&&z>2)return'compound';
+  if(z>3)return'spike';
+  if(dr>1.8&&z>1.5)return'drift';
+  if(z>2)return'spike';
+  return'nominal';
 }
 
-
-// ================= ALERTS =================
-async function apiAlerts(){
-
-  const res = await fetch(BASE_URL + "/alerts");
-  const data = await res.json();
-
-  state.alerts = data;
-
-  renderAlerts(); // YOUR EXISTING UI
+// =============================================
+// STREAM RECONNECT SIMULATION
+// =============================================
+function simulateStreamDrop(){
+  const ms=['CNC_01','CNC_02','CNC_04'],m=ms[Math.floor(Math.random()*ms.length)];
+  state.streamStatus[m]='reconnecting';
+  logAPI('GET',`/stream/${m}`,'connection lost','503');renderStatusBar();
+  setTimeout(()=>{state.streamStatus[m]='active';logAPI('GET',`/stream/${m}/reconnect`,'restored','200');renderStatusBar()},3000+Math.random()*2000);
 }
 
+// =============================================
+// ALERT ENGINE
+// =============================================
+const alertMsgs={
+  temp_warn:m=>`${m}: Temp elevated >μ+2σ. Check cooling.`,
+  temp_crit:m=>`${m}: CRITICAL temp. Thermal shutdown risk!`,
+  vib_warn:m=>`${m}: Vib trending up. Possible bearing wear.`,
+  vib_crit:m=>`${m}: CRITICAL vib spike. Bearing failure HIGH.`,
+  compound:m=>`${m}: COMPOUND — temp+vib both >2σ. Risk escalated.`,
+  drift:m=>`${m}: DRIFT — Gradual degradation detected.`,
+  fault:m=>`${m}: FAULT state. Immediate inspection required.`,
+};
 
-// ================= CREATE ALERT =================
-async function apiCreateAlert(){
+function raiseAlert(m,type,risk){
+  if(state.alerts.find(a=>a.machine===m&&a.type===type&&Date.now()-a.ts<30000))return;
+  const sev=risk>=70?'crit':'warn';
+  const msg=alertMsgs[type]?alertMsgs[type](m):`${m}: Anomaly [${type}]`;
+  const aType=type.includes('compound')?'compound':type.includes('drift')?'drift':'spike';
+  state.alerts.unshift({machine:m,type,severity:sev,msg,risk,anomalyType:aType,ts:Date.now(),time:formatTime(new Date())});
+  if(state.alerts.length>12)state.alerts.length=12;
+  dbInsertAlert(m,type,sev,msg,risk);
+  logAPI('POST','/alert',`{m:"${m}",t:"${type}",r:${risk}}`,'201');
+  if(sev==='crit'&&!state.schedule.find(s=>s.machine===m)){
+    const slot=scheduleSlot(m,risk);state.schedule.unshift(slot);
+    state.schedule.sort((a,b)=>b.priority-a.priority);if(state.schedule.length>6)state.schedule.length=6;
+    logAPI('POST','/schedule',`{m:"${m}",p:${slot.priority}}`,'200');
+  }
+}
 
-  await fetch(BASE_URL + "/alert",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      machine_id: state.selectedMachine,
-      type:"manual"
-    })
+function scheduleSlot(m,risk){
+  const p=risk>=90?1:risk>=70?2:3,hrs=[.5,2,8][p-1],t=new Date(Date.now()+hrs*36e5);
+  const slot={machine:m,priority:p,risk,time:formatTime(t),
+    desc:p===1?'Immediate: bearing check':p===2?'Thermal inspection + coolant':'Preventive check',
+    pclass:['p1','p2','p3'][p-1],plabel:['P1 URGENT','P2 HIGH','P3 PLANNED'][p-1]};
+  if(sqlDB)sqlDB.run(`INSERT INTO maintenance_schedule(machine,priority,description,scheduled_time,created_at)VALUES(?,?,?,?,?)`,[m,p,slot.desc,slot.time,new Date().toISOString()]);
+  return slot;
+}
+
+// =============================================
+// API LOG
+// =============================================
+function logAPI(method,path,body,status){
+  state.apiLog.unshift({method,path,body,status,time:new Date().toISOString().slice(11,19)});
+  if(state.apiLog.length>20)state.apiLog.length=20;state.apiCount++;renderAPILog();
+}
+function callPostAlert(){const m=state.selectedMachine;raiseAlert(m,'manual',calcRisk(m,state.readings[m]));renderAll()}
+function callSchedule(){
+  const m=state.selectedMachine,r=calcRisk(m,state.readings[m]),slot=scheduleSlot(m,r);
+  state.schedule.unshift(slot);state.schedule.sort((a,b)=>b.priority-a.priority);
+  if(state.schedule.length>6)state.schedule.length=6;
+  logAPI('POST','/schedule',`{m:"${m}",p:${slot.priority}}`,'200');renderSchedule();
+}
+
+// =============================================
+// CHART
+// =============================================
+const MAX_POINTS=40;
+
+function initChart(){
+  const ctx=document.getElementById('main-chart').getContext('2d');
+  if(state.chartInstance)state.chartInstance.destroy();
+  const m=state.selectedMachine,s=state.selectedSensor;
+  const mod=SENSOR_MODULES.find(x=>x.id===s),b=BASELINES[m][s];if(!b)return;
+  const hist=state.history[m][s].slice(-MAX_POINTS),labs=state.history[m].labels.slice(-MAX_POINTS);
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const gridC=isDark?'rgba(42,46,61,.5)':'rgba(0,0,0,.06)';
+  const tickC=isDark?'#555c78':'#8891a8';
+  const ptColors=hist.map(v=>{const z=Math.abs((v-b.mu)/b.sd);return z>3?'#f05050':z>2?'#f5a623':'transparent'});
+  const ptRadii=hist.map(v=>Math.abs((v-b.mu)/b.sd)>2?4:0);
+
+  state.chartInstance=new Chart(ctx,{type:'line',data:{labels:labs,datasets:[
+    {label:'Live',data:hist,borderColor:isDark?'#4a9eff':'#2b7de9',borderWidth:1.8,pointRadius:ptRadii,pointBackgroundColor:ptColors,tension:.35,fill:false},
+    {label:'Upper',data:hist.map(()=>b.mu+2*b.sd),borderColor:isDark?'rgba(74,158,255,.2)':'rgba(43,125,233,.15)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:'+1',backgroundColor:isDark?'rgba(74,158,255,.04)':'rgba(43,125,233,.04)'},
+    {label:'Lower',data:hist.map(()=>b.mu-2*b.sd),borderColor:isDark?'rgba(74,158,255,.2)':'rgba(43,125,233,.15)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false},
+    {label:'Threshold',data:hist.map(()=>mod.warn),borderColor:'rgba(240,80,80,.5)',borderWidth:1,borderDash:[6,3],pointRadius:0,fill:false},
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:0},interaction:{mode:'none'},
+    plugins:{legend:{display:false},tooltip:{enabled:false}},
+    scales:{x:{display:true,ticks:{color:tickC,font:{size:9},maxTicksLimit:6},grid:{color:gridC,lineWidth:.5}},
+      y:{display:true,min:mod.min,max:mod.max,ticks:{color:tickC,font:{size:9},maxTicksLimit:5},grid:{color:gridC,lineWidth:.5}}}}});
+}
+
+function updateChart(){
+  if(!state.chartInstance)return;
+  const m=state.selectedMachine,s=state.selectedSensor,b=BASELINES[m][s];if(!b)return;
+  const hist=state.history[m][s].slice(-MAX_POINTS),labs=state.history[m].labels.slice(-MAX_POINTS);
+  const mod=SENSOR_MODULES.find(x=>x.id===s);
+  const ptC=hist.map(v=>{const z=Math.abs((v-b.mu)/b.sd);return z>3?'#f05050':z>2?'#f5a623':'transparent'});
+  const ptR=hist.map(v=>Math.abs((v-b.mu)/b.sd)>2?4:0);
+  const ds=state.chartInstance.data.datasets;
+  ds[0].data=hist;ds[0].pointBackgroundColor=ptC;ds[0].pointRadius=ptR;
+  ds[1].data=hist.map(()=>b.mu+2*b.sd);ds[2].data=hist.map(()=>b.mu-2*b.sd);ds[3].data=hist.map(()=>mod.warn);
+  state.chartInstance.data.labels=labs;state.chartInstance.update('none');
+}
+
+// =============================================
+// NLP ENGINE — uses real API data where available
+// =============================================
+function quickAsk(q){document.getElementById('nlp-input').value=q;sendNLP()}
+
+const NLP=[
+  {p:/why.*critical|why.*crit/i,fn:(m,r)=>{
+    const sc=calcRisk(m,r),ac=state.anomalyClassification[m];
+    const riskSrc=state.apiRiskScores[m]>0?'(from API risk score)':'(computed)';
+    return`🔴 ${m} is ${sc>=70?'CRITICAL':'not critical'} (risk: ${sc}/100 ${riskSrc}):\n\n1. ANOMALY TYPES: ${ac.temp!=='nominal'?'Temp='+ac.temp+' ':''}${ac.vib!=='nominal'?'Vib='+ac.vib+' ':''}${ac.curr!=='nominal'?'Curr='+ac.curr:''}\n2. COMPOUND: ${ac.temp!=='nominal'&&ac.vib!=='nominal'?'YES — multi-sensor → risk multiplier':'No'}\n3. DRIFT: Temp=${driftState[m].temp.toFixed(2)} Vib=${driftState[m].vib.toFixed(2)}${driftState[m].temp>1.8||driftState[m].vib>1.8?' (SUSTAINED)':''}\n4. LIVE VALUES: temp=${r.temp}°C vib=${r.vib}mm/s rpm=${r.rpm} curr=${r.curr}A\n\n⚡ Action: ${sc>=70?'Immediate bearing inspection. Schedule P1 within 30min.':'Continue monitoring.'}`
+  }},
+  {p:/vibrat|vib.*spike/i,fn:(m,r)=>{
+    const b=BASELINES[m].vib;
+    const z=getZScore(m,'vib').toFixed(2);
+    const zSrc=state.apiZScores[m]?.vib!==undefined?'(API z-score)':'(computed)';
+    const a=state.anomalyClassification[m].vib;
+    return`📊 Vibration — ${m}:\nLive: ${r.vib}mm/s | Baseline: μ=${b.mu}±${b.sd}\nZ-score: ${z}σ ${zSrc} | Type: ${a.toUpperCase()}\nDrift: ${driftState[m].vib.toFixed(3)}${driftState[m].vib>1.8?' ⚠SUSTAINED':''}\nSuppressed: ${state.suppressedCounts[m].vib} transients filtered\n\n${Math.abs(+z)>2?'⚠ ROOT CAUSE: Bearing wear/spindle imbalance.':'✓ Normal.'}`
+  }},
+  {p:/temp/i,fn:(m,r)=>{
+    const b=BASELINES[m].temp,z=getZScore(m,'temp').toFixed(2);
+    const zSrc=state.apiZScores[m]?.temp!==undefined?'(API z-score)':'(computed)';
+    return`🌡 Temperature — ${m}: ${r.temp}°C\nBaseline: μ=${b.mu}°C±${b.sd}°C\nZ-score: ${z}σ ${zSrc} | Type: ${state.anomalyClassification[m].temp.toUpperCase()}\n\n${r.temp>b.mu+2*b.sd?'⚠ Check coolant flow.':'✓ Normal for this CNC.'}`
+  }},
+  {p:/risk|score/i,fn:(m,r)=>{
+    const sc=calcRisk(m,r);
+    const src=state.apiRiskScores[m]>0?'Source: Real API risk score':'Source: Computed from z-scores';
+    return`📊 Risk: ${m} = ${sc}/100 (${riskLabel(sc)})\n${src}\n\nDrift: vib=${driftState[m].vib.toFixed(2)} temp=${driftState[m].temp.toFixed(2)}\nLive: temp=${r.temp}°C vib=${r.vib}mm/s curr=${r.curr}A\nStatus: ${r.status.toUpperCase()}\n\n${sc>70?'🔴 Immediate action needed.':'✅ Continue monitoring.'}`
+  }},
+  {p:/cause|root/i,fn:(m,r)=>{
+    const sc=calcRisk(m,r);
+    return`🔍 Root Cause — ${m}:\n\n${sc>70?'COMPOUND: vib='+r.vib+'mm/s + temp='+r.temp+'°C\n\nCausal chain:\n1. Bearing wear → friction → vibration ↑\n2. Friction → heat → temperature ↑ (SECONDARY)\n3. Motor compensation → current ↑, RPM unstable\n\nBearing failure cascade confirmed.':'No clear root cause. Within acceptable deviation.'}`
+  }},
+  {p:/sched|maint|when/i,fn:(m,r)=>{
+    const sc=calcRisk(m,r),sl=scheduleSlot(m,sc);
+    return`🔧 Maintenance — ${m}:\nAction: ${sl.desc}\nPriority: ${sl.plabel} | Window: ${sl.time}\n\nCBM Logic:\n• P1(≥90%): 30min ${sc>=90?'⬅':''}  • P2(70-89%): 2hr ${sc>=70&&sc<90?'⬅':''}  • P3(40-69%): 8hr ${sc>=40&&sc<70?'⬅':''}\n\nRisk source: ${state.apiRiskScores[m]>0?'API':'computed'}`
+  }},
+  {p:/compound/i,fn:(m,r)=>{
+    const tZ=getZScore(m,'temp'),vZ=getZScore(m,'vib');
+    return`🟣 Compound Check — ${m}:\nTemp Z: ${tZ.toFixed(2)}σ ${Math.abs(tZ)>2?'⚠':''} | Vib Z: ${vZ.toFixed(2)}σ ${Math.abs(vZ)>2?'⚠':''}\n\n${Math.abs(tZ)>2&&Math.abs(vZ)>2?'⚠ COMPOUND CONFIRMED — correlated failure mode.':'✅ No compound anomaly.'}`
+  }},
+  {p:/drift/i,fn:(m,r)=>{
+    return`📈 Drift — ${m}:\nTemp: ${driftState[m].temp.toFixed(3)}${driftState[m].temp>1.8?' ⚠SUSTAINED':'✓'}\nVib: ${driftState[m].vib.toFixed(3)}${driftState[m].vib>1.8?' ⚠SUSTAINED':'✓'}\nCurr: ${driftState[m].curr.toFixed(3)}${driftState[m].curr>1.8?' ⚠':'✓'}\nRPM: ${driftState[m].rpm.toFixed(3)}${driftState[m].rpm>1.8?' ⚠':'✓'}\n\nThreshold >1.8 = sustained drift. Indicates gradual degradation.`
+  }},
+  {p:/suppress|noise|filter/i,fn:(m,r)=>{
+    return`🔇 Noise Suppression — ${m}:\n4-reading sliding window, 3+ consecutive = confirmed.\n\nSuppressed: Temp=${state.suppressedCounts[m].temp} Vib=${state.suppressedCounts[m].vib} Curr=${state.suppressedCounts[m].curr} RPM=${state.suppressedCounts[m].rpm}`
+  }},
+  {p:/api|raw|data/i,fn:(m,r)=>{
+    const raw=apiRawData[m];
+    const riskAPI=state.apiRiskScores[m];
+    const zAPI=state.apiZScores[m];
+    return`📡 Raw API Data — ${m}:\n${raw?JSON.stringify(raw,null,2).slice(0,300)+'...':'No raw data yet (API may be unreachable)'}\n\nRisk Score (API): ${riskAPI||'N/A'}\nZ-Scores (API): ${zAPI?JSON.stringify(zAPI):'N/A'}`
+  }},
+  {p:/.*/,fn:(m,r)=>{
+    const sc=calcRisk(m,r);
+    const src=state.apiRiskScores[m]>0?'API':'computed';
+    return`📋 ${m}: temp=${r.temp}°C vib=${r.vib}mm/s rpm=${r.rpm} curr=${r.curr}A\nStatus: ${r.status.toUpperCase()} | Risk: ${sc}/100 (${src})\nAPI Connected: ${apiConnected?'YES':'NO'}\n\nAsk: vibration, temperature, risk, root cause, scheduling, compound, drift, api`
+  }},
+];
+
+function sendNLP(){
+  const q=document.getElementById('nlp-input').value.trim();if(!q)return;
+  const m=state.selectedMachine,r=state.readings[m];
+  const resp=NLP.find(x=>x.p.test(q));
+  document.getElementById('nlp-resp').innerHTML=(resp?resp.fn(m,r):'No match.').replace(/\n/g,'<br>');
+  logAPI('POST','/nlp',`{q:"${q.slice(0,25)}…"}`,'200');
+  document.getElementById('nlp-input').value='';
+}
+document.getElementById('nlp-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendNLP()});
+
+// =============================================
+// RENDER
+// =============================================
+function renderSensorToggles(){
+  const el=document.getElementById('sensor-toggles');el.innerHTML='';
+  SENSOR_MODULES.forEach(s=>{const b=document.createElement('button');b.className=s.active?'stoggle on':'stoggle';b.textContent=s.label;b.onclick=()=>{s.active=!s.active;renderAll()};el.appendChild(b)});
+}
+
+function renderMachines(){
+  const grid=document.getElementById('machines-grid');grid.innerHTML='';
+  MACHINES.forEach(m=>{
+    const r=state.readings[m],risk=calcRisk(m,r),rc=riskClass(risk),sel=m===state.selectedMachine;
+    const card=document.createElement('div');
+    card.className=sel?'mc sel':(rc==='crit'?'mc crit-border':rc==='warn'?'mc warn-border':'mc');
+    card.onclick=()=>{state.selectedMachine=m;renderAll();initChart()};
+    const hasCompound=Object.values(state.anomalyClassification[m]).includes('compound');
+    const sensors=SENSOR_MODULES.filter(s=>s.active&&BASELINES[m][s.id]);
+    const sHTML=sensors.map(s=>{
+      const v=r[s.id],pct=Math.min(100,Math.max(0,((v-s.min)/(s.max-s.min))*100));
+      const a=state.anomalyClassification[m][s.id],sc=v>=s.crit?'crit':v>=s.warn?'warn':'ok';
+      return`<div class="sensor-row"><div class="sn-label">${s.id.toUpperCase()}</div><div class="sn-bar-wrap"><div class="sn-bar ${a==='drift'?'drift':sc}" style="width:${pct}%"></div></div><div class="sn-val ${sc}">${v}${s.unit}</div></div>`;
+    }).join('');
+    const col=rc==='crit'?'#f05050':rc==='warn'?'#f5a623':'#22c97a';
+    const circ=2*Math.PI*12,dash=circ*(risk/100);
+    const stream=state.streamStatus[m]!=='active'?'<span style="color:var(--amber);font-size:9px;margin-left:3px">↻</span>':'';
+    const apiSrc=state.apiRiskScores[m]>0?'<span style="font-size:8px;color:var(--cyan);margin-left:3px">●API</span>':'';
+    card.innerHTML=`<div class="mc-head">
+      <div class="mc-id" style="color:${rc==='crit'?'var(--red)':rc==='warn'?'var(--amber)':'var(--green)'}">${m}${stream}${apiSrc}</div>
+      <div class="mc-status"><div class="status-dot ${r.status==='fault'?'fault':r.status==='warning'?'warn':'ok'}"></div><span style="color:var(--txt2)">${r.status.toUpperCase()}</span></div>
+      ${hasCompound?'<div class="compound-badge">⚠ COMPOUND</div>':''}
+      <div class="risk-badge risk-${rc==='crit'?'high':rc==='warn'?'med':'low'}">${riskLabel(risk)}</div>
+    </div><div class="mc-sensors">${sHTML}</div>
+    <div class="mc-footer"><div class="risk-ring"><svg width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="12" fill="none" stroke="rgba(128,128,128,.1)" stroke-width="3"/><circle cx="17" cy="17" r="12" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dash} ${circ-dash}"/></svg><div class="risk-pct" style="color:${col}">${risk}%</div></div>
+    <div class="mc-footer-info"><div class="mfi-top">Risk Score ${state.apiRiskScores[m]>0?'(API)':'(calc)'}</div><div class="mfi-bot" style="color:${col}">${riskLabel(risk)} · ${risk}/100</div></div></div>`;
+    grid.appendChild(card);
   });
-
-  apiAlerts();
 }
 
-
-// ================= SCHEDULE =================
-async function apiSchedule(){
-
-  await fetch(BASE_URL + "/schedule-maintenance",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      machine_id: state.selectedMachine,
-      priority:"high"
-    })
+function renderDetail(){
+  const m=state.selectedMachine,r=state.readings[m],risk=calcRisk(m,r),rc=riskClass(risk);
+  document.getElementById('detail-title').textContent=`${m} — DETAIL VIEW`;
+  const tag=document.getElementById('detail-tag');
+  tag.textContent=riskLabel(risk);
+  tag.className=rc==='crit'?'tag crit-tag':'tag';
+  tag.style.color=rc==='crit'?'var(--red)':rc==='warn'?'var(--amber)':'var(--green)';
+  const s=state.selectedSensor,supp=state.suppressedCounts[m][s]||0;
+  const suppEl=document.getElementById('suppressed-indicator');
+  suppEl.textContent=`🔇 Suppressed: ${supp} transient${supp!==1?'s':''}`;
+  suppEl.className=supp>0?'suppressed-indicator active':'suppressed-indicator';
+  const tabs=document.getElementById('sensor-tabs');tabs.innerHTML='';
+  SENSOR_MODULES.filter(s=>s.active&&BASELINES[m][s.id]).forEach(s=>{
+    const a=state.anomalyClassification[m][s.id];
+    const dotCol=a==='compound'?'var(--purple)':a==='drift'?'var(--amber)':a==='spike'?'var(--red)':'var(--green)';
+    const tab=document.createElement('div');tab.className='stab'+(s.id===state.selectedSensor?' active':'');
+    tab.innerHTML=`${s.id.toUpperCase()} <span class="badge" style="background:${dotCol}"></span>`;
+    tab.onclick=()=>{state.selectedSensor=s.id;renderDetail();initChart()};tabs.appendChild(tab);
   });
-
-  alert("Maintenance Scheduled");
+  const tbl=document.getElementById('baseline-table');
+  tbl.innerHTML=`<thead><tr><th>Sensor</th><th>Live (API)</th><th>μ</th><th>σ</th><th>Z-score</th><th>Z-src</th><th>Min/Max</th><th>Anomaly</th><th>Status</th></tr></thead><tbody>${
+    SENSOR_MODULES.filter(s=>s.active&&BASELINES[m][s.id]).map(s=>{
+      const v=r[s.id],b=BASELINES[m][s.id];
+      const zVal=getZScore(m,s.id);
+      const zSrc=state.apiZScores[m]?.[s.id]!==undefined?'API':'calc';
+      const za=Math.abs(zVal);
+      const sc=v>=s.crit?'crit':v>=s.warn?'warn':'ok';
+      const col=sc==='crit'?'var(--red)':sc==='warn'?'var(--amber)':'var(--green)';
+      const h=state.history[m][s.id],mn=h.length?Math.min(...h).toFixed(1):'-',mx=h.length?Math.max(...h).toFixed(1):'-';
+      const a=state.anomalyClassification[m][s.id];
+      return`<tr><td class="hi">${s.id.toUpperCase()}</td><td style="color:${col};font-weight:600">${v}${s.unit}</td><td>${b.mu}</td><td>${b.sd}</td><td style="color:${za>2?col:'var(--txt2)'}">${zVal.toFixed(2)}σ</td><td style="color:var(--cyan);font-size:9px">${zSrc}</td><td>${mn}/${mx}</td><td><span class="anomaly-type ${a}">${a.toUpperCase()}</span></td><td style="color:${col}">${sc.toUpperCase()}</td></tr>`;
+    }).join('')}</tbody>`;
 }
 
+function renderAlerts(){
+  const el=document.getElementById('alerts-list');
+  if(!state.alerts.length){el.innerHTML='<div style="color:var(--txt3);font-size:11px;padding:4px 0">No active alerts</div>';return;}
+  el.innerHTML=state.alerts.slice(0,6).map(a=>{
+    const badge=a.anomalyType?`<span class="anomaly-type ${a.anomalyType}" style="margin-left:5px">${a.anomalyType.toUpperCase()}</span>`:'';
+    return`<div class="alert-item a-${a.severity}"><div class="al-head"><div class="al-machine ${a.severity}">${a.machine}${badge}</div><div class="al-time">${a.time}</div></div><div class="al-reason">${a.msg}</div><div class="al-risk" style="color:${a.severity==='crit'?'var(--red)':'var(--amber)'}">Risk: ${a.risk}%</div></div>`;
+  }).join('');
+  document.getElementById('alert-badge').textContent=`(${state.alerts.length})`;
+}
 
-// ================= INIT APP =================
-function startApp(){
+function renderSchedule(){
+  const el=document.getElementById('sched-list');
+  if(!state.schedule.length){el.innerHTML='<div style="color:var(--txt3);font-size:11px;padding:4px 0">No scheduled maintenance</div>';return;}
+  el.innerHTML=state.schedule.map(s=>`<div class="sched-item"><div class="si-time">${s.time}</div><div class="si-info"><div style="display:flex;align-items:center;gap:5px"><div class="si-machine">${s.machine}</div><span class="si-prio ${s.pclass}">${s.plabel}</span></div><div class="si-desc">${s.desc}</div></div></div>`).join('');
+}
 
-  apiLoadMachines();
-  apiAlerts();
+function renderRiskBoard(){
+  const el=document.getElementById('risk-board');
+  const sorted=MACHINES.map(m=>({m,r:calcRisk(m,state.readings[m])})).sort((a,b)=>b.r-a.r);
+  const cc=sorted.filter(x=>x.r>=70).length;
+  el.style.background=cc>3?'rgba(240,80,80,.05)':'';el.style.padding=cc>3?'6px 8px':'0';
+  el.innerHTML=sorted.map((x,i)=>{
+    const rc=riskClass(x.r),col=rc==='crit'?'var(--red)':rc==='warn'?'var(--amber)':'var(--green)';
+    const apiTag=state.apiRiskScores[x.m]>0?'<span style="font-size:8px;color:var(--cyan);margin-left:3px">API</span>':'';
+    return`<div style="padding:5px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:11px;font-weight:600;color:${col}">${i+1}. ${x.m}${apiTag}</span><span style="font-size:11px;color:${col}">${x.r}%</span></div><div style="height:4px;background:var(--bg4);border-radius:2px;overflow:hidden"><div style="height:100%;width:${x.r}%;background:${col};border-radius:2px;transition:width .5s"></div></div><div style="font-size:9px;color:var(--txt3);margin-top:2px">${riskLabel(x.r)}${rc==='crit'?' ← ESCALATING':''}</div></div>`;
+  }).join('')+(cc>3?`<div style="margin-top:8px;padding:5px 8px;background:var(--red-bg);border-radius:4px;border:1px solid rgba(240,80,80,.3);font-size:10px;color:var(--red)">🚨 FLEET ALERT: ${cc}/4 critical!</div>`:'');
+}
 
-  // load history for first machine
-  setTimeout(()=>{
-    if(state.selectedMachine){
-      apiHistory(state.selectedMachine);
+function renderAPILog(){
+  const el=document.getElementById('api-log');
+  el.innerHTML=state.apiLog.slice(0,8).map(e=>`<div class="api-entry"><span class="api-method ${e.method==='POST'?'post':''}">${e.method}</span><span class="api-path">${e.path}</span><span class="api-status${e.status==='503'?' err':''}">${e.status}</span></div>`).join('');
+  document.getElementById('api-count').textContent=`${state.apiCount} calls`;
+}
+
+function renderStatusBar(){
+  const dot=document.getElementById('sse-dot'),lbl=document.getElementById('sse-label');
+  if(!apiConnected){dot.className='sb-dot warn';lbl.textContent='API Offline';lbl.style.color='var(--amber)';}
+  else{dot.className='sb-dot ok';lbl.textContent='API Live';lbl.style.color='';}
+}
+
+// =============================================
+// TICK — runs every second, processes latest API data
+// =============================================
+function tick(){
+  state.tick++;
+  const t=formatTime(new Date());
+  document.getElementById('hdrtime').textContent=t;
+
+  MACHINES.forEach(m=>{
+    if(state.streamStatus[m]==='reconnecting')return;
+    const r=state.readings[m];
+    const b=BASELINES[m];
+
+    // Update history with real sensor values
+    Object.keys(b).forEach(s=>{
+      if(r[s]===undefined||r[s]===null)return;
+      state.history[m][s].push(r[s]);
+      if(state.history[m][s].length>MAX_POINTS)state.history[m][s].shift();
+      state.anomalyClassification[m][s]=classifyAnomaly(m,s,r);
+      const z=Math.abs(getZScore(m,s));
+      state.history[m].spikeFlags[s].push(z>2);
+      if(state.history[m].spikeFlags[s].length>MAX_POINTS)state.history[m].spikeFlags[s].shift();
+    });
+    if(r.press!==undefined){
+      state.history[m].press.push(r.press);
+      if(state.history[m].press.length>MAX_POINTS)state.history[m].press.shift();
     }
-  },500);
+    state.history[m].labels.push(t.slice(0,8));
+    if(state.history[m].labels.length>MAX_POINTS)state.history[m].labels.shift();
 
-  // LIVE STREAM (replaces simulation)
-  setInterval(apiStream, 2000);
+    // Alert evaluation every 5 ticks
+    if(state.tick%5===0){
+      const risk=calcRisk(m,r);
+      Object.keys(b).forEach(s=>{
+        const z=getZScore(m,s);
+        const aType=state.anomalyClassification[m][s];
+        dbInsert(m,s,r[s],+z.toFixed(2),aType,risk);
+      });
+      const tZ=getZScore(m,'temp'),vZ=getZScore(m,'vib');
+      if(checkTransient(m,'temp',Math.abs(tZ)>=2)){Math.abs(tZ)>=3?raiseAlert(m,'temp_crit',risk):raiseAlert(m,'temp_warn',risk)}
+      if(checkTransient(m,'vib',Math.abs(vZ)>=2)){Math.abs(vZ)>=3?raiseAlert(m,'vib_crit',risk):raiseAlert(m,'vib_warn',risk)}
+      if(Math.abs(tZ)>2&&Math.abs(vZ)>2)raiseAlert(m,'compound',risk);
+      if(r.status==='fault')raiseAlert(m,'fault',risk);
+      if(driftState[m].temp>1.8)raiseAlert(m,'drift',risk);
+    }
+  });
+
+  // Master bar update
+  const risks=MACHINES.map(m=>calcRisk(m,state.readings[m]));
+  const maxR=Math.max(...risks),critN=risks.filter(r=>r>=70).length;
+  const mb=document.getElementById('master-bar'),fe=document.getElementById('fleet-status'),fs=document.getElementById('fleet-sub');
+  const stripe=document.getElementById('crit-stripe');
+  if(critN>3){fe.textContent='FLEET CRITICAL';fe.className='ms-val crit';mb.classList.add('fleet-critical');stripe.classList.add('show')}
+  else if(critN>0){fe.textContent='DEGRADED';fe.className='ms-val warn';mb.classList.remove('fleet-critical');stripe.classList.remove('show')}
+  else{fe.textContent='NOMINAL';fe.className='ms-val ok';mb.classList.remove('fleet-critical');stripe.classList.remove('show')}
+  fs.textContent=`${MACHINES.length-critN}/${MACHINES.length} healthy`;
+  document.getElementById('highest-risk').textContent=`${MACHINES[risks.indexOf(maxR)]} · ${maxR}%`;
+  const act=state.alerts.filter(a=>Date.now()-a.ts<120000);
+  document.getElementById('alert-count').textContent=act.length;
+  document.getElementById('alert-sub').textContent=`${act.filter(a=>a.severity==='warn').length} warn · ${act.filter(a=>a.severity==='crit').length} crit`;
+  document.getElementById('db-rows').textContent=dbRowCount().toLocaleString();
+  document.getElementById('dpm').textContent=`${MACHINES.length*60}`;
+
+  // Update next maintenance
+  if(state.schedule.length>0){
+    document.getElementById('next-maint').textContent=state.schedule[0].machine;
+  }
+
+  renderAll();updateChart();
 }
 
-
-// ================= LOGIN SUCCESS =================
-// Wherever your login succeeds, call this:
-function showApp(){
-  document.getElementById("login-overlay").style.display="none";
-
-  document.getElementById("app-header").style.display="";
-  document.getElementById("master-bar").style.display="";
-  document.getElementById("main-layout").style.display="";
-  document.getElementById("status-bar").style.display="";
-
-  startApp(); // 🔥 IMPORTANT
+function renderAll(){renderMachines();renderDetail();renderAlerts();renderSchedule();renderRiskBoard();renderSensorToggles();renderStatusBar()}
+function setView(v){
+  state.view=v;
+  document.querySelectorAll('.hdr-btn').forEach(b=>{
+    if(b.textContent.includes('Live')||b.textContent.includes('7d'))
+      b.classList.toggle('active',b.textContent.includes(v==='history'?'7d':'Live'));
+  });
+  if(v==='history')logAPI('GET',`/history/${state.selectedMachine}`,'','200');
 }
+function formatTime(d){return d.toTimeString().slice(0,8)}
 
+// =============================================
+// INIT
+// =============================================
+async function initApp(){
+  await initSQLite();
+  // Initial render with zeros while API loads
+  renderAll();
+  setTimeout(()=>initChart(),200);
+
+  // First API poll immediately
+  await pollAPI();
+
+  // Render with real data
+  renderAll();
+  updateChart();
+
+  // Tick every 1s for UI updates
+  tickInterval=setInterval(tick,1000);
+
+  // Poll API every 3 seconds for fresh sensor data
+  apiPollInterval=setInterval(async()=>{
+    await pollAPI();
+    await fetchRiskScores();
+    await fetchZScores();
+  }, 3000);
+
+  logAPI('GET','/auth/token','validated','200');
+  logAPI('GET',`${API_BASE}/sensors`,'polling started','200');
+
+  // Discover API capabilities
+  discoverAPI();
+}
 </script>
 </body>
 </html>
-
-
