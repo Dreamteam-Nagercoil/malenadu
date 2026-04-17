@@ -5,7 +5,9 @@ import json
 import sseclient
 import threading
 
-BASE_URL = "http://localhost:3000"
+BASE_URL_RLS = "http://localhost:3000"
+BASE_URL_OUT = "http://localhost:5000"
+
 
 MACHINE_IDS = ["CNC_01", "CNC_02", "PUMP_03", "CONVEYOR_04"]
 
@@ -22,6 +24,16 @@ for m in MACHINE_IDS:
 with open("baselines.json") as f:
     baselines = json.load(f)
 
+
+# -----------------------------
+# Sender
+# -----------------------------
+def send_metrics(machine_id, payload):
+    try:
+        url = f"{BASE_URL_OUT}/pm/{machine_id}"
+        requests.post(url, json=payload, timeout=1)
+    except Exception as e:
+        print(f"[{machine_id}] Output send error:", e)
 
 # -----------------------------
 # RISK FUNCTION
@@ -42,94 +54,87 @@ def compute_risk(z_temp, z_vib, z_curr, error, threshold):
 
 
 # -----------------------------
-# ALERT FUNCTION (Node server format)
-# -----------------------------
-def send_alert(machine_id, reason, data):
-    payload = {
-        "machine_id": machine_id,
-        "reason": reason,
-        "reading": data
-    }
-    try:
-        res = requests.post(f"{BASE_URL}/alert", json=payload)
-        print(f"🚨 ALERT SENT [{machine_id}]")
-    except Exception as e:
-        print("Alert error:", e)
-
-
-# -----------------------------
 # MONITOR FUNCTION
 # -----------------------------
-def monitor(machine_id):
-    print(f"🔌 Monitoring {machine_id}")
+for event in client.events():
+    try:
+        if not event.data:
+            continue
 
-    model = models[machine_id]
+        data = json.loads(event.data)
 
-    mean = baselines[machine_id]["mean"]
-    std  = baselines[machine_id]["std"]
+        rpm  = data["rpm"]
+        temp = data["temperature_C"]
+        vib  = data["vibration_mm_s"]
+        curr = data["current_A"]
 
-    response = requests.get(f"{BASE_URL}/stream/{machine_id}", stream=True)
-    client = sseclient.SSEClient(response)
+        # -----------------------------
+        # Z-SCORE
+        # -----------------------------
+        z_temp = (temp - mean["temperature_C"]) / std["temperature_C"]
+        z_vib  = (vib  - mean["vibration_mm_s"]) / std["vibration_mm_s"]
+        z_curr = (curr - mean["current_A"])     / std["current_A"]
 
-    for event in client.events():
-        try:
-            if not event.data:
-                continue
+        # -----------------------------
+        # ML PREDICTION
+        # -----------------------------
+        X = pd.DataFrame([{
+            "rpm": rpm,
+            "temperature_C": temp,
+            "vibration_mm_s": vib
+        }])
 
-            data = json.loads(event.data)
+        predicted = model.predict(X)[0]
+        error = abs(curr - predicted)
 
-            rpm  = data["rpm"]
-            temp = data["temperature_C"]
-            vib  = data["vibration_mm_s"]
-            curr = data["current_A"]
+        # -----------------------------
+        # RISK SCORE
+        # -----------------------------
+        risk = compute_risk(z_temp, z_vib, z_curr, error, threshold=2.0)
 
-            # -----------------------------
-            # Z-SCORE
-            # -----------------------------
-            z_temp = (temp - mean["temperature_C"]) / std["temperature_C"]
-            z_vib  = (vib  - mean["vibration_mm_s"]) / std["vibration_mm_s"]
-            z_curr = (curr - mean["current_A"])     / std["current_A"]
+        print(
+            f"[{machine_id}] "
+            f"Risk={risk:.2f} | "
+            f"TempZ={z_temp:.2f} VibZ={z_vib:.2f} | "
+            f"Err={error:.2f}"
+        )
 
-            # -----------------------------
-            # ML PREDICTION
-            # -----------------------------
-            X = pd.DataFrame([{
+        # -----------------------------
+        # BUILD OUTPUT JSON
+        # -----------------------------
+        output_payload = {
+            "machine_id": machine_id,
+            "timestamp": data["timestamp"],
+
+            "z_scores": {
+                "temperature": z_temp,
+                "vibration": z_vib,
+                "current": z_curr
+            },
+
+            "ml": {
+                "predicted_current": predicted,
+                "actual_current": curr,
+                "error": error
+            },
+
+            "risk": risk,
+
+            "raw": {
                 "rpm": rpm,
                 "temperature_C": temp,
-                "vibration_mm_s": vib
-            }])
+                "vibration_mm_s": vib,
+                "current_A": curr
+            }
+        }
 
-            predicted = model.predict(X)[0]
-            error = abs(curr - predicted)
+        # -----------------------------
+        # SEND TO OUTPUT SERVER
+        # -----------------------------
+        send_metrics(machine_id, output_payload)
 
-            # -----------------------------
-            # RISK SCORE
-            # -----------------------------
-            risk = compute_risk(z_temp, z_vib, z_curr, error, threshold=2.0)
-
-            print(
-                f"[{machine_id}] "
-                f"Risk={risk:.2f} | "
-                f"TempZ={z_temp:.2f} VibZ={z_vib:.2f} | "
-                f"Err={error:.2f}"
-            )
-
-            # -----------------------------
-            # ALERT
-            # -----------------------------
-            if risk > 0.7:
-                reason = (
-                    f"High risk detected. "
-                    f"Temp deviation={z_temp:.2f}, "
-                    f"Vibration deviation={z_vib:.2f}, "
-                    f"Prediction error={error:.2f}"
-                )
-
-                send_alert(machine_id, reason, data)
-
-        except Exception as e:
-            print("Processing error:", e)
-
+    except Exception as e:
+        print("Processing error:", e)
 
 # -----------------------------
 # RUN MULTI-MACHINE
