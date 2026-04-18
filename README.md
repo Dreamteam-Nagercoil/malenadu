@@ -3,6 +3,7 @@
 Install docker on your system based on your operating system and install SupaBase.
 
 # Install Dependencies
+
 ```bash
 npm install
 ```
@@ -19,4 +20,4 @@ python nlp2.py
 # NLP Setup
 For the NLP, setup Ollama and install "llama3.2:3b". Make sure the Ollama server is running.
 
-> Note: The IP addresses in the
+> Note: You have to enter your Supabase private key in the files for the database to connect.
