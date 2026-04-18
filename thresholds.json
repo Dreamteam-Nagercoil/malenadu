@@ -1,0 +1,18 @@
+{
+  "CNC_01": {
+    "warning": 0.4,
+    "fault": 0.7
+  },
+  "CNC_02": {
+    "warning": 0.8499999999999999,
+    "fault": 0.9
+  },
+  "PUMP_03": {
+    "warning": 0.5399999999999999,
+    "fault": 0.9
+  },
+  "CONVEYOR_04": {
+    "warning": 0.78,
+    "fault": 0.9
+  }
+}
