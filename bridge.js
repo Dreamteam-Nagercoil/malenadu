@@ -2,10 +2,10 @@ const axios = require("axios");
 const { createClient } = require("@supabase/supabase-js");
 
 // --- CONFIG ---
-const SUPABASE_URL = "http://127.0.0.1:54321";
+const SUPABASE_URL = "http://100.125.109.107:54321";
 const SUPABASE_KEY = "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH";
-const TELEMETRY_BASE_URL = "http://100.107.213.66:3000/stream";
-const MODEL_STREAM_URL = "http://100.107.213.66:5000/stream";
+const TELEMETRY_BASE_URL = "http://100.125.109.107:3000/stream";
+const MODEL_STREAM_URL = "http://100.125.109.107:5000/stream";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const machineIds = ["CNC_01", "CNC_02", "PUMP_03", "CONVEYOR_04"];

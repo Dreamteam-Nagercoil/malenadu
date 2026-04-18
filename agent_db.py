@@ -11,7 +11,6 @@ import pandas as pd
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
-
 from supabase import Client, create_client
 
 # -----------------------------
@@ -156,6 +155,8 @@ def monitor(machine_id):
                 risk *= 0.85
             elif machine_id == "CNC_02":
                 risk *= 1.1
+
+            risk = min(max(risk, 0.0), 1.0)
 
             history[machine_id].append(risk)
             avg_risk = sum(history[machine_id]) / len(history[machine_id])
