@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>NeuralGuard — AI Predictive Maintenance</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700;800&display=swap"
+            rel="stylesheet"
+        />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <style>
+            :root {
+                --bg: #0a0c10;
+                --bg2: #0f1117;
+                --bg3: #161b24;
+                --border: rgba(255, 255, 255, 0.08);
+                --text: #e8eaf0;
+                --text2: #8892a4;
+                --text3: #4f5a6e;
+                --accent: #3b82f6;
+                --green: #22c55e;
+                --amber: #f59e0b;
+                --red: #ef4444;
+                --font: "Syne", sans-serif;
+                --mono: "JetBrains Mono", monospace;
+                --radius: 12px;
+            }
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                background: var(--bg);
+                color: var(--text);
+                font-family: var(--font);
+                display: flex;
+                flex-direction: column;
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            header {
+                background: var(--bg2);
+                border-bottom: 1px solid var(--border);
+                padding: 0 20px;
+                height: 60px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .logo {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-weight: 800;
+                font-size: 18px;
+            }
+            .logo-icon {
+                width: 32px;
+                height: 32px;
+                background: var(--accent);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+            }
+
+            .main-layout {
+                display: flex;
+                flex: 1;
+                overflow: hidden;
+            }
+            .content {
+                flex: 1;
+                overflow-y: auto;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+            .sidebar {
+                width: 340px;
+                background: var(--bg2);
+                border-left: 1px solid var(--border);
+                display: flex;
+                flex-direction: column;
+            }
+
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                min-height: 200px;
+            }
+            .machine-card {
+                background: var(--bg2);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 18px;
+                transition: 0.2s;
+                position: relative;
+            }
+            .machine-card.alert-active {
+                border-color: var(--red);
+                box-shadow: 0 0 15px rgba(239, 68, 68, 0.1);
+            }
+            .machine-card.selected {
+                border-color: var(--accent);
+                background: var(--bg3);
+            }
+
+            .mc-header {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 12px;
+                font-family: var(--mono);
+                font-weight: 700;
+            }
+            .mc-status {
+                font-size: 10px;
+                padding: 2px 6px;
+                border-radius: 4px;
+                text-transform: uppercase;
+                background: rgba(255, 255, 255, 0.05);
+            }
+            .status-running {
+                color: var(--green);
+            }
+            .status-warning {
+                color: var(--amber);
+            }
+            .status-fault {
+                color: var(--red);
+            }
+
+            .mc-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            .metric {
+                background: var(--bg);
+                padding: 8px;
+                border-radius: 6px;
+                border: 1px solid var(--border);
+                text-align: center;
+            }
+            .m-label {
+                font-size: 9px;
+                color: var(--text3);
+                font-family: var(--mono);
+                margin-bottom: 2px;
+            }
+            .m-val {
+                font-family: var(--mono);
+                font-size: 13px;
+                font-weight: 600;
+            }
+
+            .insight-box {
+                background: rgba(59, 130, 246, 0.08);
+                border-left: 3px solid var(--accent);
+                padding: 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                line-height: 1.4;
+                color: var(--text2);
+            }
+            .insight-title {
+                font-weight: 800;
+                font-size: 10px;
+                color: var(--accent);
+                margin-bottom: 4px;
+                font-family: var(--mono);
+            }
+
+            .chart-area {
+                background: var(--bg2);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 20px;
+                height: 300px;
+            }
+
+            .chat-container {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            .messages {
+                flex: 1;
+                overflow-y: auto;
+                padding: 15px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .msg {
+                padding: 10px 14px;
+                border-radius: 12px;
+                font-size: 13px;
+                max-width: 85%;
+                line-height: 1.4;
+            }
+            .msg.ai {
+                background: var(--bg3);
+                align-self: flex-start;
+                border: 1px solid var(--border);
+            }
+            .msg.user {
+                background: var(--accent);
+                align-self: flex-end;
+                color: white;
+            }
+
+            .chat-input-wrap {
+                padding: 15px;
+                border-top: 1px solid var(--border);
+                display: flex;
+                gap: 8px;
+            }
+            input {
+                flex: 1;
+                background: var(--bg3);
+                border: 1px solid var(--border);
+                padding: 10px;
+                border-radius: 8px;
+                color: white;
+                outline: none;
+                font-family: var(--font);
+            }
+            input:focus {
+                border-color: var(--accent);
+            }
+
+            .api-log {
+                height: 120px;
+                background: #000;
+                padding: 10px;
+                font-family: var(--mono);
+                font-size: 10px;
+                overflow-y: auto;
+                color: #444;
+                border-top: 1px solid var(--border);
+            }
+            .empty-state {
+                grid-column: 1 / -1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 200px;
+                color: var(--text3);
+                font-family: var(--mono);
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <div class="logo-icon">NG</div>
+                NeuralGuard
+            </div>
+            <div
+                style="
+                    font-family: var(--mono);
+                    font-size: 11px;
+                    color: var(--green);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                "
+            >
+                <div
+                    style="
+                        width: 8px;
+                        height: 8px;
+                        background: var(--green);
+                        border-radius: 50%;
+                    "
+                ></div>
+                LIVE SYSTEM MONITOR
+            </div>
+            <div
+                id="clock"
+                style="
+                    font-family: var(--mono);
+                    color: var(--text3);
+                    font-size: 12px;
+                "
+            >
+                00:00:00
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <main class="content">
+                <div class="grid" id="machine-grid">
+                    <div class="empty-state">
+                        Waiting for Flask backend stream (127.0.0.1:6969)...
+                    </div>
+                </div>
+
+                <div class="chart-area">
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 15px;
+                        "
+                    >
+                        <div
+                            id="chart-title"
+                            style="font-family: var(--mono); font-weight: 600"
+                        >
+                            Historical Trends: CNC_01
+                        </div>
+                        <div
+                            style="
+                                font-size: 10px;
+                                color: var(--text3);
+                                font-family: var(--mono);
+                            "
+                        >
+                            Pulling from Supabase
+                        </div>
+                    </div>
+                    <canvas id="historyChart"></canvas>
+                </div>
+            </main>
+
+            <aside class="sidebar">
+                <div class="chat-container">
+                    <div
+                        style="
+                            padding: 12px 15px;
+                            font-size: 10px;
+                            font-family: var(--mono);
+                            color: var(--text3);
+                            border-bottom: 1px solid var(--border);
+                        "
+                    >
+                        AI COPILOT (QWEN 4B)
+                    </div>
+                    <div class="messages" id="chat-msgs">
+                        <div class="msg ai">
+                            I'm monitoring the Supabase telemetry stream. Ask me
+                            about any specific machine's health.
+                        </div>
+                    </div>
+                    <div class="chat-input-wrap">
+                        <input
+                            type="text"
+                            id="chat-input"
+                            placeholder="Type a message and press Enter..."
+                        />
+                        <button
+                            id="send-btn"
+                            style="
+                                background: var(--accent);
+                                border: none;
+                                color: white;
+                                padding: 0 15px;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-weight: 700;
+                            "
+                        >
+                            ➔
+                        </button>
+                    </div>
+                </div>
+                <div class="api-log" id="api-log"></div>
+            </aside>
+        </div>
+
+        <script>
+            // --- SETTINGS ---
+            const SUPABASE_URL = "http://100.125.109.107:54321";
+            const SUPABASE_KEY =
+                "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH";
+            const FLASK_URL = "http://127.0.0.1:6969";
+
+            const supabaseClient = window.supabase.createClient(
+                SUPABASE_URL,
+                SUPABASE_KEY,
+            );
+            let selectedMachine = "CNC_01";
+            let historyChart;
+
+            // 1. Chart Init
+            function initChart() {
+                const ctx = document
+                    .getElementById("historyChart")
+                    .getContext("2d");
+                historyChart = new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: [],
+                        datasets: [
+                            {
+                                label: "Temp (°C)",
+                                borderColor: "#ef4444",
+                                data: [],
+                                tension: 0.3,
+                                pointRadius: 0,
+                                borderWidth: 2,
+                            },
+                            {
+                                label: "Vib (mm/s)",
+                                borderColor: "#f59e0b",
+                                data: [],
+                                tension: 0.3,
+                                pointRadius: 0,
+                                borderWidth: 2,
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                grid: { color: "rgba(255,255,255,0.03)" },
+                                ticks: { color: "#4f5a6e", font: { size: 10 } },
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { display: false },
+                            },
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: "#8892a4",
+                                    font: {
+                                        family: "JetBrains Mono",
+                                        size: 10,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+            }
+
+            // 2. Fetch History from Supabase
+            async function fetchHistory(mId) {
+                const { data, error } = await supabaseClient
+                    .from("machine_telemetry")
+                    .select("temperature_c, vibration_mm_s, recorded_at")
+                    .eq("machine_id", mId)
+                    .order("recorded_at", { ascending: false })
+                    .limit(40);
+
+                if (data) {
+                    const sorted = data.reverse();
+                    historyChart.data.labels = sorted.map((d) =>
+                        new Date(d.recorded_at).toLocaleTimeString(),
+                    );
+                    historyChart.data.datasets[0].data = sorted.map(
+                        (d) => d.temperature_c,
+                    );
+                    historyChart.data.datasets[1].data = sorted.map(
+                        (d) => d.vibration_mm_s,
+                    );
+                    historyChart.update("none");
+                }
+            }
+
+            // 3. Render UI from Flask Stream
+            function updateUI(machines) {
+                const grid = document.getElementById("machine-grid");
+                if (!machines || machines.length === 0) return;
+
+                grid.innerHTML = machines
+                    .map((m) => {
+                        const status = (
+                            m.telemetry?.status || "offline"
+                        ).toLowerCase();
+                        const isSel =
+                            m.machine_id === selectedMachine ? "selected" : "";
+                        const hasAlert = m.alert === 1;
+
+                        return `
+                    <div class="machine-card ${isSel} ${hasAlert ? "alert-active" : ""}" onclick="selectMachine('${m.machine_id}')">
+                        <div class="mc-header">
+                            <span>${m.machine_id}</span>
+                            <span class="mc-status status-${status}">${status}</span>
+                        </div>
+                        <div class="mc-grid">
+                            <div class="metric"><div class="m-label">TEMP</div><div class="m-val">${m.telemetry?.temperature?.toFixed(1) || 0}°C</div></div>
+                            <div class="metric"><div class="m-label">VIB</div><div class="m-val">${m.telemetry?.vibration?.toFixed(2) || 0}</div></div>
+                            <div class="metric"><div class="m-label">RISK</div><div class="m-val" style="color:${m.risk > 0.6 ? "#ef4444" : "inherit"}">${(m.risk * 100).toFixed(0)}%</div></div>
+                        </div>
+                        <div class="insight-box">
+                            <div class="insight-title">ANALYSIS INSIGHT</div>
+                            ${m.message || "Processing live telemetry..."}
+                        </div>
+                    </div>`;
+                    })
+                    .join("");
+            }
+
+            function selectMachine(id) {
+                selectedMachine = id;
+                document.getElementById("chart-title").textContent =
+                    `Historical Trends: ${id}`;
+                fetchHistory(id);
+                addLog(`Switched view to ${id}`);
+            }
+
+            // 4. Chat Functionality
+            async function sendChat() {
+                const input = document.getElementById("chat-input");
+                const text = input.value.trim();
+                if (!text) return;
+
+                appendMsg(text, "user");
+                input.value = "";
+                addLog(`POST chat request...`);
+
+                try {
+                    const res = await fetch(`${FLASK_URL}/chat`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ message: text }),
+                    });
+                    const data = await res.json();
+                    appendMsg(data.reply, "ai");
+                } catch (err) {
+                    appendMsg(
+                        "Error: Check if Flask app is running on " + FLASK_URL,
+                        "ai",
+                    );
+                    addLog("Chat failed: " + err.message, "red");
+                }
+            }
+
+            function appendMsg(t, role) {
+                const box = document.getElementById("chat-msgs");
+                const d = document.createElement("div");
+                d.className = `msg ${role}`;
+                d.textContent = t;
+                box.appendChild(d);
+                box.scrollTop = box.scrollHeight;
+            }
+
+            function addLog(msg, color = "#444") {
+                const log = document.getElementById("api-log");
+                const e = document.createElement("div");
+                e.style.color = color;
+                e.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+                log.prepend(e);
+            }
+
+            // --- LISTENERS ---
+            window.addEventListener("DOMContentLoaded", () => {
+                initChart();
+
+                // Fix Enter Key
+                document
+                    .getElementById("chat-input")
+                    .addEventListener("keypress", (e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            sendChat();
+                        }
+                    });
+                document
+                    .getElementById("send-btn")
+                    .addEventListener("click", sendChat);
+
+                // Start Clock
+                setInterval(() => {
+                    document.getElementById("clock").textContent =
+                        new Date().toLocaleTimeString();
+                }, 1000);
+
+                // Connect SSE
+                addLog("Connecting to Flask SSE stream...");
+                const source = new EventSource(`${FLASK_URL}/alert`);
+                source.onmessage = (e) => {
+                    const data = JSON.parse(e.data);
+                    updateUI(data);
+                    fetchHistory(selectedMachine);
+                };
+                source.onerror = () => {
+                    addLog("SSE Error: Backend unreachable", "#ef4444");
+                };
+            });
+        </script>
+    </body>
+</html>
