@@ -14,8 +14,8 @@ app = Flask(__name__)
 CORS(app)
 
 # --- CONFIG ---
-SUPABASE_URL = "http://100.125.109.107:54321"
-SUPABASE_KEY = "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH"
+SUPABASE_URL = "http://localhost:54321"
+SUPABASE_KEY = ""
 MODEL_NAME = "llama3.2:3b"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)

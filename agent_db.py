@@ -16,8 +16,8 @@ from supabase import Client, create_client
 # -----------------------------
 # CONFIG
 # -----------------------------
-SUPABASE_URL = "http://100.125.109.107:54321"
-SUPABASE_KEY = "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH"
+SUPABASE_URL = "http://localhost:54321"
+SUPABASE_KEY = ""
 MACHINE_IDS = ["CNC_01", "CNC_02", "PUMP_03", "CONVEYOR_04"]
 
 LEARNING_ENABLED = False
